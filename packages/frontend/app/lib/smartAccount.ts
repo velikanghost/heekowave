@@ -3,8 +3,7 @@ import {
   Implementation,
   type MetaMaskSmartAccount,
 } from '@metamask/delegation-toolkit'
-import { createPublicClient, http, type Account } from 'viem'
-import { privateKeyToAccount } from 'viem/accounts'
+import { createPublicClient, http, type WalletClient } from 'viem'
 import { monadTestnet } from 'viem/chains'
 
 const MONAD_RPC_URL = process.env.NEXT_PUBLIC_MONAD_RPC_URL as string
@@ -15,27 +14,31 @@ export const publicClient = createPublicClient({
 })
 
 /**
- * Creates a MetaMask Hybrid Smart Account for a given owner account
- * @param ownerAccount - The EOA account that will own the smart account
+ * Creates a MetaMask Hybrid Smart Account using a Wallet Client signer
+ * This is the correct approach for Web3Auth integration
+ * @param walletClient - The wallet client from Web3Auth or other wallet providers
  * @returns MetaMask Smart Account instance
  */
 export const createSmartAccount = async (
-  ownerAccount: Account | `0x${string}`,
+  walletClient: WalletClient,
 ): Promise<MetaMaskSmartAccount<Implementation.Hybrid>> => {
   try {
-    // Convert hex private key to account if needed
-    const account =
-      typeof ownerAccount === 'string'
-        ? privateKeyToAccount(ownerAccount)
-        : ownerAccount
+    // Get the first address from the wallet client
+    const addresses = await walletClient.getAddresses()
+    const owner = addresses[0]
+
+    if (!owner) {
+      throw new Error('No addresses found in wallet client')
+    }
 
     // Create Hybrid smart account using MetaMask Delegation Toolkit
+    // Using walletClient as signer with correct format
     const smartAccount = await toMetaMaskSmartAccount({
       client: publicClient,
       implementation: Implementation.Hybrid,
-      deployParams: [account.address, [], [], []], // owner, no passkeys initially
+      deployParams: [owner, [], [], []], // owner, no passkeys initially
       deploySalt: '0x',
-      signer: { account },
+      signer: { walletClient } as any, // Type assertion to handle Web3Auth wallet client compatibility
     })
 
     return smartAccount
@@ -46,25 +49,29 @@ export const createSmartAccount = async (
 }
 
 /**
- * Gets an existing MetaMask Smart Account for a given owner
- * @param ownerAccount - The EOA account that owns the smart account
+ * Gets an existing MetaMask Smart Account using a Wallet Client signer
+ * @param walletClient - The wallet client from Web3Auth or other wallet providers
  * @returns MetaMask Smart Account instance or null if not found
  */
 export const getExistingSmartAccount = async (
-  ownerAccount: Account | `0x${string}`,
+  walletClient: WalletClient,
 ): Promise<MetaMaskSmartAccount<Implementation.Hybrid> | null> => {
   try {
-    const account =
-      typeof ownerAccount === 'string'
-        ? privateKeyToAccount(ownerAccount)
-        : ownerAccount
+    // Get the first address from the wallet client
+    const addresses = await walletClient.getAddresses()
+    const owner = addresses[0]
+
+    if (!owner) {
+      return null
+    }
 
     // Try to get existing smart account
+    // Using walletClient as signer with correct format
     const smartAccount = await toMetaMaskSmartAccount({
       client: publicClient,
       implementation: Implementation.Hybrid,
-      address: account.address,
-      signer: { account },
+      address: owner, // Use the owner address as the smart account address
+      signer: { walletClient } as any, // Type assertion to handle Web3Auth wallet client compatibility
     })
 
     return smartAccount

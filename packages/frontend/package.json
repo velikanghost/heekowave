@@ -6,13 +6,15 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "wagmi": "wagmi generate"
   },
   "dependencies": {
     "@heekowave/shared": "workspace:*",
     "@metamask/delegation-toolkit": "^0.13.0",
     "@serwist/next": "^9.0.15",
     "@tanstack/react-query": "^5.90.5",
+    "@wagmi/cli": "^2.3.2",
     "@web3auth/modal": "^10.5.2",
     "graphql-request": "^7.3.0",
     "graphql-ws": "^6.0.6",
@@ -23,7 +25,6 @@
     "react-dom": "^18",
     "serwist": "latest",
     "viem": "^2.38.3",
-    "wagmi": "^2.18.1",
     "web-push": "3.6.7"
   },
   "devDependencies": {
@@ -36,6 +37,7 @@
     "postcss": "^8",
     "serwist": "^9.0.15",
     "tailwindcss": "^3.4.1",
-    "typescript": "^5"
+    "typescript": "^5",
+    "wagmi": "^2.18.1"
   }
 }

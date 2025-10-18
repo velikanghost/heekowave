@@ -1,0 +1,28 @@
+{
+    "name": "heekowave",
+    "version": "1.0.0",
+    "description": "Decentralized P2P payments platform with MetaMask Smart Accounts",
+    "private": true,
+    "workspaces": [
+        "packages/*"
+    ],
+    "scripts": {
+        "dev": "yarn workspace @heekowave/frontend dev",
+        "build": "yarn workspace @heekowave/frontend build",
+        "start": "yarn workspace @heekowave/frontend start",
+        "clean:contracts": "yarn workspace @heekowave/contracts clean",
+        "compile:contracts": "yarn workspace @heekowave/contracts compile",
+        "build:contracts": "yarn workspace @heekowave/contracts build",
+        "deploy:contracts": "yarn workspace @heekowave/contracts deploy",
+        "test:contracts": "yarn workspace @heekowave/contracts test",
+        "type-check": "yarn workspaces run type-check",
+        "lint": "yarn workspaces run lint"
+    },
+    "devDependencies": {
+        "@types/node": "^20.0.0",
+        "typescript": "^5.0.0"
+    },
+    "dependencies": {
+        "viem": "^2.38.3"
+    }
+}

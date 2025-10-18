@@ -1,0 +1,17 @@
+{
+    "name": "@heekowave/contracts",
+    "version": "1.0.0",
+    "description": "Heekowave smart contracts",
+    "scripts": {
+        "build": "forge build",
+        "clean": "forge clean",
+        "compile": "forge compile",
+        "test": "forge test",
+        "deploy": "forge script script/Deploy.s.sol:DeployHeekowave --rpc-url https://testnet-rpc.monad.xyz --account monad --sender 0x28738040d191ff30673f546FB6BF997E6cdA6dbF --broadcast",
+        "deploy:local": "forge script script/Deploy.s.sol --broadcast",
+        "type-check": "echo 'No TypeScript in contracts'"
+    },
+    "devDependencies": {
+        "forge-std": "^1.1.2"
+    }
+}

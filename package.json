@@ -10,6 +10,7 @@
         "dev": "yarn workspace @heekowave/frontend dev",
         "build": "yarn workspace @heekowave/frontend build",
         "start": "yarn workspace @heekowave/frontend start",
+        "wagmi": "yarn workspace @heekowave/frontend wagmi",
         "clean:contracts": "yarn workspace @heekowave/contracts clean",
         "compile:contracts": "yarn workspace @heekowave/contracts compile",
         "build:contracts": "yarn workspace @heekowave/contracts build",

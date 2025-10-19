@@ -1,6 +1,6 @@
 # Heekowave P2P Payments Platform
 
-A decentralized peer-to-peer payments application built with MetaMask Smart Accounts, Delegation Toolkit, and Envio indexing on Monad testnet.
+A decentralized peer-to-peer payments application built with MetaMask Smart Accounts, and Envio indexing on Monad testnet.
 
 ## 🚀 Quick Start
 

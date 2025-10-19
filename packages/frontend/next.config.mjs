@@ -17,6 +17,16 @@ export default withSerwist({
         '@react-native-async-storage/async-storage': false,
         'react-native': false,
         'react-native-web': false,
+        'react-native-crypto': false,
+        'react-native-randombytes': false,
+        'crypto': false,
+        'stream': false,
+        'util': false,
+        'buffer': false,
+        'process': false,
+        'os': false,
+        'path': false,
+        'fs': false,
       }
     }
     return config

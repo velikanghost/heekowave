@@ -23,6 +23,7 @@
         "typescript": "^5.0.0"
     },
     "dependencies": {
-        "viem": "^2.38.3"
+        "viem": "^2.38.3",
+        "web-push": "3.6.7"
     }
 }

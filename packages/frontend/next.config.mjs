@@ -29,6 +29,13 @@ export default withSerwist({
         'fs': false,
       }
     }
+    
+    // Add externals for problematic modules
+    config.externals = config.externals || []
+    config.externals.push({
+      '@react-native-async-storage/async-storage': 'commonjs @react-native-async-storage/async-storage'
+    })
+    
     return config
   },
 })

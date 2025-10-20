@@ -21,11 +21,22 @@ export function Providers({ children }: Props) {
     },
   })
 
+  const clientId = process.env.NEXT_PUBLIC_WEB3AUTH_CLIENT_ID
+
+  if (!clientId) {
+    console.warn('NEXT_PUBLIC_WEB3AUTH_CLIENT_ID is not set. Please add it to your .env.local file.')
+    return (
+      <QueryClientProvider client={queryClient}>
+        <WagmiProvider config={config}>{children}</WagmiProvider>
+      </QueryClientProvider>
+    )
+  }
+
   return (
     <Web3AuthProvider
       config={{
         web3AuthOptions: {
-          clientId: process.env.NEXT_PUBLIC_WEB3AUTH_CLIENT_ID!,
+          clientId: clientId,
           web3AuthNetwork: 'sapphire_devnet',
         },
       }}

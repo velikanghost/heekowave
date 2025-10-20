@@ -4,13 +4,21 @@ import {
   type MetaMaskSmartAccount,
 } from '@metamask/delegation-toolkit'
 import { createPublicClient, http, type WalletClient } from 'viem'
+import { createBundlerClient } from 'viem/account-abstraction'
 import { monadTestnet } from 'viem/chains'
+import { monadTestnetEnvironment, validateEnvironment } from './environment'
 
-const MONAD_RPC_URL = process.env.NEXT_PUBLIC_MONAD_RPC_URL as string
+// Validate environment variables on import
+validateEnvironment()
 
 export const publicClient = createPublicClient({
   chain: monadTestnet,
-  transport: http(MONAD_RPC_URL),
+  transport: http(monadTestnetEnvironment.rpcUrl),
+})
+
+export const bundlerClient = createBundlerClient({
+  client: publicClient,
+  transport: http(monadTestnetEnvironment.bundlerUrl),
 })
 
 /**
@@ -32,13 +40,14 @@ export const createSmartAccount = async (
     }
 
     // Create Hybrid smart account using MetaMask Delegation Toolkit
-    // Using walletClient as signer with correct format
+    // Using walletClient as signer with proper environment configuration
     const smartAccount = await toMetaMaskSmartAccount({
       client: publicClient,
       implementation: Implementation.Hybrid,
       deployParams: [owner, [], [], []], // owner, no passkeys initially
       deploySalt: '0x',
       signer: { walletClient } as any, // Type assertion to handle Web3Auth wallet client compatibility
+      environment: monadTestnetEnvironment, // Proper environment configuration
     })
 
     return smartAccount
@@ -66,12 +75,13 @@ export const getExistingSmartAccount = async (
     }
 
     // Try to get existing smart account
-    // Using walletClient as signer with correct format
+    // Using walletClient as signer with proper environment configuration
     const smartAccount = await toMetaMaskSmartAccount({
       client: publicClient,
       implementation: Implementation.Hybrid,
       address: owner, // Use the owner address as the smart account address
       signer: { walletClient } as any, // Type assertion to handle Web3Auth wallet client compatibility
+      environment: monadTestnetEnvironment, // Proper environment configuration
     })
 
     return smartAccount

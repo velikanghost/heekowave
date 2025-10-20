@@ -1,21 +1,22 @@
 import {
   createDelegation as createMetaMaskDelegation,
   type Delegation,
+  type Caveat,
 } from '@metamask/delegation-toolkit'
 import { type MetaMaskSmartAccount } from '@metamask/delegation-toolkit'
 import { DelegationInfo } from '@heekowave/shared'
-import { isAddress } from 'viem'
+import {
+  normalizeAddress,
+  validateTokenAddress,
+  validateDelegateAddress,
+} from './addressUtils'
+import {
+  encodeERC20TransferAmountTerms,
+  encodeNativeTokenTransferAmountTerms,
+} from './caveatEnforcers'
+import { encodeAbiParameters, parseAbiParameters } from 'viem'
 
-/**
- * Validates if a string is a valid Ethereum address
- * @param address - The address string to validate
- * @returns True if valid, false otherwise
- */
-const isValidAddress = (address: string): address is `0x${string}` => {
-  return isAddress(address)
-}
-
-// Type for delegation scope configuration
+// Type for delegation scope configuration (for internal use)
 type DelegationScope =
   | {
       type: 'erc20TransferAmount'
@@ -45,23 +46,123 @@ export const createDelegation = async (
   scope: DelegationScope,
 ): Promise<DelegationInfo & { delegation: Delegation }> => {
   try {
+    // Validate and normalize addresses
+    const normalizedDelegateAddress = validateDelegateAddress(delegateAddress)
+    const normalizedDelegatorAddress = normalizeAddress(
+      delegatorSmartAccount.address,
+    )
+
     // Get the environment for the chain
     const environment = delegatorSmartAccount.environment
 
     console.log('Creating delegation with:', {
-      to: delegateAddress,
-      from: delegatorSmartAccount.address,
+      to: normalizedDelegateAddress,
+      from: normalizedDelegatorAddress,
       environment,
       scope,
     })
 
-    // Create delegation with specified scope
-    const delegation = createMetaMaskDelegation({
-      to: delegateAddress,
-      from: delegatorSmartAccount.address,
-      environment,
-      scope,
+    // Build caveats array based on scope type
+    let caveats: Caveat[] = []
+
+    if (scope.type === 'erc20TransferAmount') {
+      const normalizedTokenAddress = validateTokenAddress(scope.tokenAddress)
+
+      console.log('Token address validation:', {
+        originalTokenAddress: scope.tokenAddress,
+        normalizedTokenAddress,
+        isValidAddress: !!normalizedTokenAddress,
+        addressLength: normalizedTokenAddress.length,
+        startsWith0x: normalizedTokenAddress.startsWith('0x'),
+        isHex: /^0x[a-fA-F0-9]+$/.test(normalizedTokenAddress),
+      })
+
+      // Get the ERC20TransferAmountEnforcer address from environment
+      const enforcerAddress = environment.caveatEnforcers?.ERC20TransferAmount
+
+      if (!enforcerAddress) {
+        throw new Error(
+          'ERC20TransferAmount caveat enforcer not found in environment configuration',
+        )
+      }
+
+      console.log('Using ERC20TransferAmountEnforcer at:', enforcerAddress)
+
+      // Encode terms: 20 bytes token address + 32 bytes max amount (52 bytes total)
+      const terms = encodeERC20TransferAmountTerms(
+        normalizedTokenAddress,
+        scope.maxAmount,
+      )
+
+      console.log('Encoded caveat terms:', {
+        tokenAddress: normalizedTokenAddress,
+        maxAmount: scope.maxAmount.toString(),
+        termsLength: terms.length,
+        terms,
+      })
+
+      caveats = [
+        {
+          enforcer: enforcerAddress,
+          terms: terms as `0x${string}`,
+          args: '0x' as `0x${string}`,
+        },
+      ]
+    } else if (scope.type === 'nativeTokenTransferAmount') {
+      const enforcerAddress =
+        environment.caveatEnforcers?.NativeTokenTransferAmount
+
+      if (!enforcerAddress) {
+        throw new Error(
+          'NativeTokenTransferAmount caveat enforcer not found in environment configuration',
+        )
+      }
+
+      // Encode terms: 32 bytes max amount
+      const terms = encodeNativeTokenTransferAmountTerms(scope.maxAmount)
+
+      caveats = [
+        {
+          enforcer: enforcerAddress,
+          terms: terms as `0x${string}`,
+          args: '0x' as `0x${string}`,
+        },
+      ]
+    } else if (scope.type === 'functionCall') {
+      // For function call restrictions, we'd need AllowedTargetsEnforcer and AllowedMethodsEnforcer
+      throw new Error('Function call scope not yet implemented')
+    }
+
+    console.log('Final delegation parameters:', {
+      to: normalizedDelegateAddress,
+      from: normalizedDelegatorAddress,
+      environment: environment,
+      caveats,
     })
+
+    // Create delegation with caveats
+    // The MetaMask SDK may handle the actual structure creation differently
+    let delegation: Delegation
+    try {
+      // Try using the SDK's helper if available, otherwise construct manually
+      delegation = createMetaMaskDelegation({
+        to: normalizedDelegateAddress,
+        from: normalizedDelegatorAddress,
+        caveats,
+      } as any)
+    } catch (delegationError) {
+      // Fallback: construct delegation manually according to the struct
+      console.log('SDK helper failed, constructing delegation manually')
+      delegation = {
+        delegate: normalizedDelegateAddress,
+        delegator: normalizedDelegatorAddress,
+        authority:
+          '0x0000000000000000000000000000000000000000000000000000000000000000' as `0x${string}`,
+        caveats,
+        salt: `0x${Date.now().toString(16)}` as `0x${string}`,
+        signature: '0x' as `0x${string}`,
+      }
+    }
 
     console.log('Delegation created successfully:', delegation)
 
@@ -76,8 +177,8 @@ export const createDelegation = async (
     }
 
     return {
-      delegator: delegatorSmartAccount.address,
-      delegate: delegateAddress,
+      delegator: normalizedDelegatorAddress,
+      delegate: normalizedDelegateAddress,
       caveatHash: '0x', // Will be computed by the delegation manager
       isValid: true,
       delegation: signedDelegation,
@@ -112,19 +213,20 @@ export const createERC20TransferDelegation = async (
       environment: delegatorSmartAccount.environment,
     })
 
-    // Validate token address format
-    if (!isValidAddress(tokenAddress)) {
-      throw new Error(`Invalid token address format: ${tokenAddress}`)
-    }
+    // Validate addresses using our utility functions
+    const validatedDelegateAddress = validateDelegateAddress(delegateAddress)
+    const validatedTokenAddress = validateTokenAddress(tokenAddress)
 
-    // Validate delegate address format
-    if (!isValidAddress(delegateAddress)) {
-      throw new Error(`Invalid delegate address format: ${delegateAddress}`)
-    }
+    console.log('Address validation results:', {
+      originalDelegate: delegateAddress,
+      validatedDelegate: validatedDelegateAddress,
+      originalToken: tokenAddress,
+      validatedToken: validatedTokenAddress,
+    })
 
-    return createDelegation(delegatorSmartAccount, delegateAddress, {
+    return createDelegation(delegatorSmartAccount, validatedDelegateAddress, {
       type: 'erc20TransferAmount',
-      tokenAddress,
+      tokenAddress: validatedTokenAddress,
       maxAmount,
     })
   } catch (error) {

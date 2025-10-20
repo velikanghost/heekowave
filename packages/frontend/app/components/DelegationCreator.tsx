@@ -16,8 +16,12 @@ import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { createERC20TransferDelegation } from '../lib/delegation'
 import { createSmartAccount } from '../lib/smartAccount'
-import { MONAD_TESTNET_ADDRESSES } from '@heekowave/shared'
 import { parseUnits, isAddress } from 'viem'
+import { MONAD_TESTNET_ADDRESSES } from '@heekowave/shared'
+import {
+  validateDelegateAddress,
+  validateTokenAddress,
+} from '../lib/addressUtils'
 
 export default function DelegationCreator() {
   const { address: eoaAddress, isConnected } = useAccount()
@@ -26,40 +30,79 @@ export default function DelegationCreator() {
   const [maxAmount, setMaxAmount] = useState('')
   const [isCreating, setIsCreating] = useState(false)
   const [createdDelegation, setCreatedDelegation] = useState<any>(null)
+  const [smartAccountAddress, setSmartAccountAddress] = useState<string | null>(
+    null,
+  )
   const [error, setError] = useState<string | null>(null)
 
   const handleCreateDelegation = async () => {
+    console.log('=== DelegationCreator: handleCreateDelegation called ===')
+    console.log('Input validation:', {
+      eoaAddress,
+      delegateAddress,
+      maxAmount,
+      walletClient: !!walletClient,
+    })
+
     if (!eoaAddress || !delegateAddress || !maxAmount) {
+      console.log('Validation failed: missing fields')
       setError('Please fill in all fields')
       return
     }
 
     if (!walletClient) {
+      console.log('Validation failed: no wallet client')
       setError('Wallet client not available')
       return
     }
 
     // Validate addresses using viem's isAddress
     if (!isAddress(delegateAddress)) {
+      console.log('Validation failed: invalid delegate address')
       setError('Invalid delegate address format')
       return
     }
 
     const tokenAddress = MONAD_TESTNET_ADDRESSES.MOCK_USDC
-    if (!isAddress(tokenAddress)) {
-      setError('Invalid token address format')
+    console.log('Token address validation check:', {
+      tokenAddress,
+      typeofTokenAddress: typeof tokenAddress,
+      isAddressResult: isAddress(tokenAddress),
+      MONAD_TESTNET_ADDRESSES,
+    })
+
+    if (!tokenAddress || !isAddress(tokenAddress)) {
+      console.error('Validation failed: invalid token address', {
+        tokenAddress,
+        isValid: isAddress(tokenAddress),
+      })
+      setError(`Invalid token address format: ${tokenAddress}`)
       return
     }
 
+    console.log('All validations passed, starting delegation creation...')
     setIsCreating(true)
     setError(null)
 
     try {
+      console.log('Creating smart account...')
       // Create smart account for the user using wallet client
       const smartAccount = await createSmartAccount(walletClient)
+      console.log('Smart account created:', smartAccount.address)
+
+      // Store smart account address for display
+      setSmartAccountAddress(smartAccount.address)
 
       // Parse amount (assuming 6 decimals for USDC)
       const amountWei = parseUnits(maxAmount, 6)
+
+      console.log('Creating delegation with parameters:', {
+        smartAccountAddress: smartAccount.address,
+        delegateAddress,
+        tokenAddress,
+        amountWei: amountWei.toString(),
+        maxAmount,
+      })
 
       // Create delegation with validated addresses
       const delegation = await createERC20TransferDelegation(
@@ -69,6 +112,7 @@ export default function DelegationCreator() {
         amountWei,
       )
 
+      console.log('Delegation created successfully:', delegation)
       setCreatedDelegation(delegation)
     } catch (error) {
       console.error('Error creating delegation:', error)
@@ -165,7 +209,10 @@ export default function DelegationCreator() {
 
         {/* Create Button */}
         <Button
-          onClick={handleCreateDelegation}
+          onClick={() => {
+            console.log('=== Button clicked ===')
+            handleCreateDelegation()
+          }}
           disabled={
             isCreating || !delegateAddress || !maxAmount || !walletClient
           }
@@ -199,9 +246,11 @@ export default function DelegationCreator() {
 
               <div className="space-y-2">
                 <div className="bg-muted p-3 rounded-md">
-                  <p className="text-sm font-semibold">Delegator:</p>
+                  <p className="text-sm font-semibold">
+                    Delegator (Smart Account):
+                  </p>
                   <code className="text-xs font-mono break-all">
-                    {createdDelegation.delegator}
+                    {smartAccountAddress || createdDelegation.delegator}
                   </code>
                 </div>
 
@@ -233,7 +282,8 @@ export default function DelegationCreator() {
             This delegation allows the specified address to spend up to{' '}
             {maxAmount || 'X'} USDC from your smart account. The relayer will
             use this delegation to execute payments without requiring your
-            signature for each transaction.
+            signature for each transaction. Your smart account address will be
+            created automatically and displayed above.
           </p>
         </div>
       </CardContent>

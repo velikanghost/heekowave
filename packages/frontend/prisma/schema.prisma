@@ -1,0 +1,75 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("POSTGRES_PRISMA_URL") // uses connection pooling
+  directUrl = env("POSTGRES_URL_NON_POOLING") // uses a direct connection
+}
+
+model User {
+  id                  String       @id @default(cuid())
+  email               String       @unique
+  eoaAddress          String       @unique @map("eoa_address")
+  smartAccountAddress String       @unique @map("smart_account_address")
+  createdAt           DateTime     @default(now()) @map("created_at")
+  updatedAt           DateTime     @updatedAt @map("updated_at")
+  payments            Payment[]
+  withdrawals         Withdrawal[]
+
+  @@map("users")
+}
+
+model Payment {
+  id           String        @id @default(cuid())
+  userId       String        @map("user_id")
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  recipient    String
+  amount       Decimal       @db.Decimal(78, 0) // For uint256
+  description  String?
+  txHash       String?       @map("tx_hash")
+  status       PaymentStatus @default(PENDING)
+  createdAt    DateTime      @default(now()) @map("created_at")
+  executedAt   DateTime?     @map("executed_at")
+
+  @@index([userId])
+  @@index([status])
+  @@index([userId, status])
+  @@index([createdAt])
+  @@map("payments")
+}
+
+model Withdrawal {
+  id          String           @id @default(cuid())
+  userId      String           @map("user_id")
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  destination String
+  amount      Decimal          @db.Decimal(78, 0) // For uint256
+  txHash      String?          @map("tx_hash")
+  status      WithdrawalStatus @default(PENDING)
+  createdAt   DateTime         @default(now()) @map("created_at")
+  processedAt DateTime?        @map("processed_at")
+
+  @@index([userId])
+  @@index([status])
+  @@index([userId, status])
+  @@map("withdrawals")
+}
+
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+}
+
+enum WithdrawalStatus {
+  PENDING
+  PROCESSING
+  COMPLETE
+  FAILED
+}

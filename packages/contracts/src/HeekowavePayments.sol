@@ -87,42 +87,33 @@ contract HeekowavePayments is Ownable, ReentrancyGuard {
     }
 
     /**
-     * @dev Send a payment from caller to recipient
-     * @notice This function is meant to be called via delegation redemption
-     * @notice msg.sender will be the smart account when called via DelegationManager
+     * @dev Log a payment event - called after smart account executes transfer
+     * @notice This function is for tracking/indexing purposes only
+     * @notice The actual token transfer is done directly by the smart account via delegation
+     * @param from Sender address (smart account)
      * @param to Recipient address
-     * @param amount Amount to send in USDC
+     * @param amount Amount sent in USDC
      * @param token Token address (must be USDC)
      *
      * Flow:
      * 1. Frontend creates delegation with spending limit caveat
-     * 2. Relayer calls DelegationManager.redeemDelegation() with this function as target
+     * 2. Relayer calls DelegationManager.redeemDelegation() with USDC.transfer() as execution
      * 3. DelegationManager validates delegation and caveats
-     * 4. DelegationManager calls this function from the smart account context
-     * 5. Payment executes if all validations pass
+     * 4. Smart account executes USDC.transfer() directly (no approval needed)
+     * 5. Optionally, this function can be called to emit tracking events
      */
-    function sendPayment(
+    function logPayment(
+        address from,
         address to,
         uint256 amount,
         address token
-    ) external nonReentrant {
+    ) external {
         require(to != address(0), "Invalid recipient");
         require(amount > 0, "Amount must be positive");
         require(token == usdcToken, "Only USDC supported");
 
-        // Transfer tokens from caller (smart account) to recipient
-        // The smart account must have approved this contract or
-        // the delegation must grant the necessary permissions
-        IERC20(token).transferFrom(msg.sender, to, amount);
-
-        emit PaymentSent(
-            msg.sender,
-            to,
-            amount,
-            token,
-            block.timestamp,
-            bytes32(0)
-        );
+        // Just emit event for tracking - no actual transfer
+        emit PaymentSent(from, to, amount, token, block.timestamp, bytes32(0));
     }
 
     /**

@@ -116,6 +116,18 @@ export const heekowavePaymentsAbi = [
   },
   {
     type: 'function',
+    inputs: [
+      { name: 'from', internalType: 'address', type: 'address' },
+      { name: 'to', internalType: 'address', type: 'address' },
+      { name: 'amount', internalType: 'uint256', type: 'uint256' },
+      { name: 'token', internalType: 'address', type: 'address' },
+    ],
+    name: 'logPayment',
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
     inputs: [],
     name: 'owner',
     outputs: [{ name: '', internalType: 'address', type: 'address' }],
@@ -160,17 +172,6 @@ export const heekowavePaymentsAbi = [
     ],
     name: 'requestPayment',
     outputs: [{ name: 'requestId', internalType: 'bytes32', type: 'bytes32' }],
-    stateMutability: 'nonpayable',
-  },
-  {
-    type: 'function',
-    inputs: [
-      { name: 'to', internalType: 'address', type: 'address' },
-      { name: 'amount', internalType: 'uint256', type: 'uint256' },
-      { name: 'token', internalType: 'address', type: 'address' },
-    ],
-    name: 'sendPayment',
-    outputs: [],
     stateMutability: 'nonpayable',
   },
   {
@@ -703,6 +704,15 @@ export const useWriteHeekowavePaymentsFulfillRequest =
   })
 
 /**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link heekowavePaymentsAbi}__ and `functionName` set to `"logPayment"`
+ */
+export const useWriteHeekowavePaymentsLogPayment =
+  /*#__PURE__*/ createUseWriteContract({
+    abi: heekowavePaymentsAbi,
+    functionName: 'logPayment',
+  })
+
+/**
  * Wraps __{@link useWriteContract}__ with `abi` set to __{@link heekowavePaymentsAbi}__ and `functionName` set to `"renounceOwnership"`
  */
 export const useWriteHeekowavePaymentsRenounceOwnership =
@@ -718,15 +728,6 @@ export const useWriteHeekowavePaymentsRequestPayment =
   /*#__PURE__*/ createUseWriteContract({
     abi: heekowavePaymentsAbi,
     functionName: 'requestPayment',
-  })
-
-/**
- * Wraps __{@link useWriteContract}__ with `abi` set to __{@link heekowavePaymentsAbi}__ and `functionName` set to `"sendPayment"`
- */
-export const useWriteHeekowavePaymentsSendPayment =
-  /*#__PURE__*/ createUseWriteContract({
-    abi: heekowavePaymentsAbi,
-    functionName: 'sendPayment',
   })
 
 /**
@@ -763,6 +764,15 @@ export const useSimulateHeekowavePaymentsFulfillRequest =
   })
 
 /**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link heekowavePaymentsAbi}__ and `functionName` set to `"logPayment"`
+ */
+export const useSimulateHeekowavePaymentsLogPayment =
+  /*#__PURE__*/ createUseSimulateContract({
+    abi: heekowavePaymentsAbi,
+    functionName: 'logPayment',
+  })
+
+/**
  * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link heekowavePaymentsAbi}__ and `functionName` set to `"renounceOwnership"`
  */
 export const useSimulateHeekowavePaymentsRenounceOwnership =
@@ -778,15 +788,6 @@ export const useSimulateHeekowavePaymentsRequestPayment =
   /*#__PURE__*/ createUseSimulateContract({
     abi: heekowavePaymentsAbi,
     functionName: 'requestPayment',
-  })
-
-/**
- * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link heekowavePaymentsAbi}__ and `functionName` set to `"sendPayment"`
- */
-export const useSimulateHeekowavePaymentsSendPayment =
-  /*#__PURE__*/ createUseSimulateContract({
-    abi: heekowavePaymentsAbi,
-    functionName: 'sendPayment',
   })
 
 /**

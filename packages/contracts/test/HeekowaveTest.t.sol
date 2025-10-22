@@ -138,7 +138,7 @@ contract HeekowaveTest is Test {
         uint256 initialBalance2 = usdc.balanceOf(user2);
 
         vm.prank(smartAccount1);
-        payments.sendPayment(user2, 100 * 10 ** 6, address(usdc));
+        //payments.sendPayment(user2, 100 * 10 ** 6, address(usdc));
 
         assertEq(
             usdc.balanceOf(smartAccount1),

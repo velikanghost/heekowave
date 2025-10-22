@@ -6,6 +6,7 @@ import { Web3AuthProvider } from '@web3auth/modal/react'
 import { WagmiProvider } from '@web3auth/modal/react/wagmi'
 import { createConfig, http } from 'wagmi'
 import { monadTestnet } from 'viem/chains'
+import { injected } from 'wagmi/connectors'
 
 type Props = {
   children: ReactNode
@@ -16,6 +17,7 @@ export function Providers({ children }: Props) {
 
   const config = createConfig({
     chains: [monadTestnet],
+    connectors: [injected()],
     transports: {
       [monadTestnet.id]: http(),
     },

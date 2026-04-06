@@ -1,0 +1,26 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Service {
+  id        String   @id
+  provider  String
+  name      String
+  endpoint  String
+  price     String
+  tags      String[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model PaymentReceipt {
+  paymentHash String   @id
+  serviceId   String
+  amount      String
+  payTo       String
+  createdAt   DateTime @default(now())
+}

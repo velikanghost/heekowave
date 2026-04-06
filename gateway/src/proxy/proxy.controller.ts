@@ -1,33 +1,64 @@
-import { Controller, All, Req, Res, Param, UseGuards, NotFoundException, HttpException } from '@nestjs/common';
+import { Controller, All, Get, Req, Res, Param, UseGuards, NotFoundException, HttpException } from '@nestjs/common';
 import type { Request, Response } from 'express';
-import { ProxyService } from './proxy.service';
-import { X402Guard } from './x402.guard';
+import { ProxyService } from './proxy.service.js';
+import { X402Guard } from './x402.guard.js';
 
 @Controller('proxy')
 export class ProxyController {
   constructor(private readonly proxyService: ProxyService) {}
 
+  @Get('registry')
+  async getRegistry() {
+    return this.proxyService.getAllApis();
+  }
+
   @All(':apiId/*')
   @UseGuards(X402Guard)
   async handleProxy(@Param('apiId') apiId: string, @Req() req: Request, @Res() res: Response) {
-    const api = this.proxyService.getApi(apiId);
+    const api = await this.proxyService.getApi(apiId);
     if (!api) throw new NotFoundException('API not found');
 
-    // Simple proxying logic
-    // We strip the /proxy/:apiId prefix if needed, but for our mock weather API
-    // we'll just hit the mapped URL directly
+    const subPath = (req.params as any)[0] || '';
+    const query = req.url.includes('?') ? req.url.substring(req.url.indexOf('?')) : '';
+    const targetUrl = `${api.endpoint.replace(/\/$/, '')}/${subPath.replace(/^\//, '')}${query}`;
+
+    // Filter headers to avoid loops and internal logic leaks
+    const headers: Record<string, string> = {};
+    for (const [key, value] of Object.entries(req.headers)) {
+      const lowerKey = key.toLowerCase();
+      if (!['host', 'l-http', 'content-length', 'connection'].includes(lowerKey)) {
+        headers[key] = value as string;
+      }
+    }
     
     try {
-      // In production, we would use axios or node-fetch to properly proxy headers, body, params
-      const response = await fetch(api.url, {
+      const fetchOptions: any = {
         method: req.method,
-        // body and other headers skipped for hackathon simplicity
-      });
+        headers,
+      };
 
-      const data = await response.json();
-      res.status(response.status).json(data);
+      if (['POST', 'PUT', 'PATCH'].includes(req.method) && req.body && Object.keys(req.body).length > 0) {
+        fetchOptions.body = JSON.stringify(req.body);
+        if (!headers['Content-Type']) {
+          headers['Content-Type'] = 'application/json';
+        }
+      }
+
+      const response = await fetch(targetUrl, fetchOptions);
+      
+      // Try to parse JSON, fall back to text if needed
+      const contentType = response.headers.get('content-type');
+      let data;
+      if (contentType && contentType.includes('application/json')) {
+        data = await response.json();
+      } else {
+        data = await response.text();
+      }
+
+      res.status(response.status).send(data);
     } catch (error) {
-      throw new HttpException('Error proxying to destination', 502);
+      console.error('Proxy Error:', error);
+      throw new HttpException('Error proxying to destination: ' + error.message, 502);
     }
   }
 }

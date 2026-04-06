@@ -1,31 +1,70 @@
-import { Injectable } from '@nestjs/common';
-
-export interface RegisteredApi {
-  id: string;
-  url: string;
-  price: string;
-  merchant: string;
-}
+import { Injectable, OnModuleInit } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service.js';
+import { Service } from '@prisma/client';
+import { SorobanService } from './soroban.service.js';
 
 @Injectable()
-export class ProxyService {
-  private apis = new Map<string, RegisteredApi>();
+export class ProxyService implements OnModuleInit {
+  constructor(
+    private prisma: PrismaService,
+    private soroban: SorobanService
+  ) {}
 
-  constructor() {
-    // Seed with a mock weather API
-    this.apis.set('weather', {
-      id: 'weather',
-      url: 'https://api.open-meteo.com/v1/forecast?latitude=52.52&longitude=13.41&current=temperature_2m,wind_speed_10m&hourly=temperature_2m,relative_humidity_2m,wind_speed_10m', // A free public endpoint for testing
-      price: '0.01',
-      merchant: 'GBmerchantAddressHere' // Replace with real one in production
+  async onModuleInit() {
+    // Initial sync on startup
+    this.syncFromChain().catch(err => {
+      console.error('Initial Soroban sync failed:', err);
+    });
+
+    // Periodic sync every 30 seconds
+    setInterval(() => {
+      this.syncFromChain().catch(err => {
+        console.error('Periodic Soroban sync failed:', err);
+      });
+    }, 30000);
+  }
+
+  async getApi(id: string): Promise<Service | null> {
+    return this.prisma.service.findUnique({
+      where: { id },
     });
   }
 
-  getApi(id: string): RegisteredApi | undefined {
-    return this.apis.get(id);
+  async getAllApis(): Promise<Service[]> {
+    return this.prisma.service.findMany({
+      orderBy: { createdAt: 'desc' }
+    });
   }
 
-  registerApi(api: RegisteredApi) {
-    this.apis.set(api.id, api);
+  /**
+   * Syncs the local database with the Soroban smart contract
+   */
+  async syncFromChain(): Promise<void> {
+    const chainServices = await this.soroban.getAllServices();
+    
+    for (const svc of chainServices) {
+      // Map Soroban struct to Prisma model
+      // Price is typically in stroops (7 decimals)
+      const price = (Number(svc.price) / 10000000).toString();
+
+      await this.prisma.service.upsert({
+        where: { id: svc.id.toString() },
+        update: {
+          name: svc.name,
+          provider: svc.provider,
+          endpoint: svc.endpoint,
+          price: price,
+          tags: svc.tags,
+        },
+        create: {
+          id: svc.id.toString(),
+          name: svc.name,
+          provider: svc.provider,
+          endpoint: svc.endpoint,
+          price: price,
+          tags: svc.tags,
+        },
+      });
+    }
   }
 }

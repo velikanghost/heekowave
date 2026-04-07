@@ -18,12 +18,49 @@ import {
   Code,
   Layers,
   Loader2,
+  CheckCircle2,
+  AlertCircle,
+  Terminal,
+  ExternalLink,
+  ShieldCheck,
+  Zap
 } from 'lucide-react'
+import { useWallet } from '@/lib/wallet-context'
+import { 
+  rpc, 
+  Networks, 
+  TransactionBuilder, 
+  Operation, 
+  Asset
+} from '@stellar/stellar-sdk'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog"
+
+const RPC_URL = 'https://soroban-testnet.stellar.org';
 
 export default function Home() {
+  const { isConnected, publicKey, sign } = useWallet();
   const [services, setServices] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  
+  // Integration Modal State
+  const [selectedService, setSelectedService] = useState<any | null>(null)
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [paymentLoading, setPaymentLoading] = useState(false)
+  const [paymentTxHash, setPaymentTxHash] = useState<string | null>(null)
+  const [receipt, setReceipt] = useState<string | null>(null)
+  
+  // Test Console State
+  const [testLoading, setTestLoading] = useState(false)
+  const [testResponse, setTestResponse] = useState<any | null>(null)
+  const [testError, setTestError] = useState<string | null>(null)
 
   useEffect(() => {
     async function fetchServices() {
@@ -40,6 +77,93 @@ export default function Home() {
     }
     fetchServices()
   }, [])
+
+  const handleIntegrateClick = (svc: any) => {
+    setSelectedService(svc)
+    setIsModalOpen(true)
+    setPaymentTxHash(null)
+    setReceipt(null)
+    setTestResponse(null)
+    setTestError(null)
+  }
+
+  const handlePay = async () => {
+    if (!isConnected || !publicKey || !selectedService) return;
+    
+    setPaymentLoading(true);
+    setTestError(null);
+
+    try {
+      const server = new rpc.Server(RPC_URL);
+      const sourceAccount = await server.getAccount(publicKey);
+      
+      // Build a simple payment transaction to the provider
+      const tx = new TransactionBuilder(sourceAccount, {
+        fee: '10000',
+        networkPassphrase: Networks.TESTNET,
+      })
+      .addOperation(
+        Operation.payment({
+          destination: selectedService.provider,
+          asset: Asset.native(),
+          amount: selectedService.price, // XLM amount
+        })
+      )
+      .setTimeout(30)
+      .build();
+
+      const xdr = tx.toXDR();
+      const signedXdr = await sign(xdr, 'TESTNET');
+      
+      const result = await server.sendTransaction(TransactionBuilder.fromXDR(signedXdr, Networks.TESTNET));
+
+      if (result.status !== 'ERROR') {
+        setPaymentTxHash(result.hash);
+        
+        // Generate L-HTTP Receipt (Simple JSON format for the guard)
+        const receiptData = {
+          hash: result.hash,
+          signer: publicKey,
+          timestamp: Math.floor(Date.now() / 1000)
+        };
+        setReceipt(btoa(JSON.stringify(receiptData)));
+      } else {
+        throw new Error('Payment transaction failed');
+      }
+    } catch (err: any) {
+      console.error('Payment Error:', err);
+      setTestError(err.message || 'Payment failed. Use Friendbot to fund your wallet.');
+    } finally {
+      setPaymentLoading(false);
+    }
+  }
+
+  const handleTestCall = async () => {
+    if (!selectedService || !receipt) return;
+    
+    setTestLoading(true);
+    setTestResponse(null);
+    setTestError(null);
+
+    try {
+      const res = await fetch(`http://localhost:3002/proxy/${selectedService.id}/`, {
+        method: 'GET',
+        headers: {
+          'l-http': receipt
+        }
+      });
+      
+      const data = await res.json();
+      setTestResponse(data);
+      if (!res.ok) {
+        setTestError(data.message || 'Gateway rejected the request');
+      }
+    } catch (err: any) {
+      setTestError(err.message || 'Failed to reach Heekowave Gateway');
+    } finally {
+      setTestLoading(false);
+    }
+  }
 
   const getIcon = (tags: string[]) => {
     const t = tags.map((tag) => tag.toLowerCase())
@@ -96,7 +220,7 @@ export default function Home() {
             <Button
               size="lg"
               variant="outline"
-              className="h-12 px-8 rounded-full text-base font-medium border-border/50 hover:bg-white/5 transition-all"
+              className="h-12 px-8 rounded-full text-base font-medium border-border/50 hover:bg-white/5 transition-all text-white"
             >
               Read Docs
             </Button>
@@ -117,10 +241,6 @@ export default function Home() {
                 Discover and integrate live AI services directly into your dApps
                 and Agents.
               </p>
-            </div>
-
-            <div className="hidden md:flex gap-4">
-              {/* Optional search/filter tools */}
             </div>
           </div>
 
@@ -146,7 +266,7 @@ export default function Home() {
             ) : services.length === 0 ? (
               <div className="col-span-full text-center py-24 opacity-60">
                 <p className="text-xl">No services found in the registry.</p>
-                <Button variant="outline" className="mt-6 rounded-full">
+                <Button variant="outline" className="mt-6 rounded-full text-white">
                   Register the first API
                 </Button>
               </div>
@@ -156,7 +276,6 @@ export default function Home() {
                   key={svc.id}
                   className="group relative overflow-hidden bg-background/40 border-border/50 hover:border-indigo-500/50 transition-all duration-300 hover:shadow-[0_0_30px_-10px_rgba(99,102,241,0.2)]"
                 >
-                  {/* Subtle gradient overlay on hover */}
                   <div className="absolute inset-0 bg-linear-to-br from-indigo-500/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
 
                   <CardHeader>
@@ -194,6 +313,7 @@ export default function Home() {
                     <Button
                       variant="ghost"
                       className="w-full justify-between group/btn text-muted-foreground hover:text-white"
+                      onClick={() => handleIntegrateClick(svc)}
                     >
                       Integrate API
                       <ArrowRight className="w-4 h-4 opacity-50 group-hover/btn:opacity-100 group-hover/btn:translate-x-1 transition-all" />
@@ -205,6 +325,120 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* Integrate Modal */}
+      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+        <DialogContent className="bg-zinc-950 border-white/10 text-white max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <div className="flex items-center gap-4 mb-2">
+               <div className="w-12 h-12 rounded-xl bg-indigo-500/10 flex items-center justify-center border border-indigo-500/20">
+                 {selectedService && getIcon(selectedService.tags)}
+               </div>
+               <div>
+                 <DialogTitle className="text-2xl">{selectedService?.name}</DialogTitle>
+                 <DialogDescription className="text-indigo-400">
+                   {selectedService?.price} XLM per Request
+                 </DialogDescription>
+               </div>
+            </div>
+          </DialogHeader>
+
+          <div className="space-y-6 py-4">
+            {!paymentTxHash ? (
+              <div className="space-y-4">
+                <div className="p-4 rounded-xl bg-white/5 border border-white/10">
+                  <h4 className="font-semibold mb-2 flex items-center gap-2">
+                    <ShieldCheck className="w-4 h-4 text-green-400" />
+                    Payment Required
+                  </h4>
+                  <p className="text-sm text-muted-foreground">
+                    This API is monetized via Heekowave Gateway. To access it, you must perform a Stellar payment of <strong>{selectedService?.price} XLM</strong> to the provider.
+                  </p>
+                </div>
+                
+                <Button 
+                  className="w-full bg-indigo-600 hover:bg-indigo-500 h-12 text-lg font-bold"
+                  onClick={handlePay}
+                  disabled={paymentLoading || !isConnected}
+                >
+                  {paymentLoading ? (
+                    <><Loader2 className="mr-2 h-5 w-5 animate-spin"/> Processing Payment...</>
+                  ) : !isConnected ? (
+                    "Connect Wallet to Pay"
+                  ) : (
+                    <>Pay & Get Receipt <Zap className="ml-2 w-4 h-4" /></>
+                  )}
+                </Button>
+                {testError && <p className="text-red-400 text-xs text-center">{testError}</p>}
+              </div>
+            ) : (
+              <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <div className="p-4 rounded-xl bg-green-500/10 border border-green-500/20 flex items-center gap-4">
+                   <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center text-green-400">
+                     <CheckCircle2 className="w-6 h-6" />
+                   </div>
+                   <div>
+                     <p className="font-bold text-green-400">Payment Successful</p>
+                     <button 
+                       onClick={() => window.open(`https://stellar.expert/explorer/testnet/tx/${paymentTxHash}`, '_blank')}
+                       className="text-[10px] text-green-400/70 underline flex items-center gap-1"
+                     >
+                       View Receipt {paymentTxHash.slice(0, 8)}... <ExternalLink className="w-2.5 h-2.5" />
+                     </button>
+                   </div>
+                </div>
+
+                <div className="space-y-4">
+                  <h4 className="text-sm font-semibold flex items-center gap-2">
+                    <Terminal className="w-4 h-4 text-indigo-400" />
+                    Live API Console
+                  </h4>
+                  
+                  <div className="relative">
+                    <div className="flex justify-between items-center mb-2 px-1">
+                      <span className="text-[10px] uppercase tracking-widest text-zinc-500">HTTP GET via Heekowave Gateway</span>
+                      <Badge variant="outline" className="text-[9px] border-indigo-500/30 text-indigo-400 h-4">Receipt Attached</Badge>
+                    </div>
+                    <div className="p-3 bg-black rounded-lg border border-white/5 font-mono text-[11px] text-zinc-400 break-all mb-4">
+                      GET http://localhost:3002/proxy/{selectedService?.id}/
+                    </div>
+                    
+                    <Button 
+                      className="w-full bg-white text-black hover:bg-white/90 font-bold mb-4"
+                      onClick={handleTestCall}
+                      disabled={testLoading}
+                    >
+                      {testLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Run Integration Test"}
+                    </Button>
+
+                    {testResponse && (
+                      <div className="space-y-2 animate-in zoom-in-95 duration-300">
+                        <span className="text-[10px] uppercase tracking-widest text-zinc-500">Server Response</span>
+                        <pre className="p-4 bg-zinc-900 rounded-lg border border-white/5 font-mono text-[11px] text-green-400 overflow-x-auto">
+                          {JSON.stringify(testResponse, null, 2)}
+                        </pre>
+                      </div>
+                    )}
+                    
+                    {testError && (
+                      <div className="p-3 bg-red-500/10 border border-red-500/20 text-red-400 text-[11px] rounded-lg flex items-start gap-2">
+                        <AlertCircle className="w-4 h-4 shrink-0" />
+                        {testError}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter className="border-t border-white/5 pt-4">
+            <Button variant="ghost" onClick={() => setIsModalOpen(false)} className="text-zinc-500 hover:text-white">
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

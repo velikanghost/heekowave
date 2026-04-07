@@ -4,3 +4,4 @@ dist
 /generated/prisma
 test-receipt.ts
 docker-compose.yml
+test.txt

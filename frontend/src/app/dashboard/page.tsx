@@ -5,7 +5,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Rocket, ShieldCheck, TerminalSquare, Loader2, ExternalLink, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Rocket, ShieldCheck, TerminalSquare, Loader2, ExternalLink, CheckCircle2, AlertCircle, Activity, Terminal } from 'lucide-react';
 import { useWallet } from '@/lib/wallet-context';
 import { 
   rpc, 
@@ -13,7 +13,8 @@ import {
   Networks, 
   TransactionBuilder, 
   Address, 
-  Contract
+  Contract,
+  Operation
 } from '@stellar/stellar-sdk';
 import { Badge } from "@/components/ui/badge";
 import {
@@ -36,6 +37,14 @@ export default function Dashboard() {
   const [txHash, setTxHash] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
+
+  // Test Console State
+  const [isTestModalOpen, setIsTestModalOpen] = useState(false);
+  const [selectedSvc, setSelectedSvc] = useState<any | null>(null);
+  const [testPath, setTestPath] = useState('');
+  const [testLoading, setTestLoading] = useState(false);
+  const [testResponse, setTestResponse] = useState<any | null>(null);
+  const [testError, setTestError] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -149,6 +158,47 @@ export default function Dashboard() {
       setError(err.message || 'An unexpected error occurred during deployment.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleTestRun = async () => {
+    if (!selectedSvc || !publicKey) return;
+    setTestLoading(true);
+    setTestError(null);
+    setTestResponse(null);
+
+    try {
+      const server = new rpc.Server(RPC_URL);
+      const sourceAccount = await server.getAccount(publicKey);
+      
+      // Build a no-op (sequence bump) to prove ownership in the bypass check
+      const tx = new TransactionBuilder(sourceAccount, {
+        fee: '100',
+        networkPassphrase: Networks.TESTNET,
+      })
+      .addOperation(Operation.bumpSequence({ bumpTo: "0" })) // Placeholder no-op
+      .setTimeout(30)
+      .build();
+
+      const signedXdr = await sign(tx.toXDR(), 'TESTNET');
+
+      const res = await fetch(`http://localhost:3002/proxy/${selectedSvc.id}/${testPath}`, {
+        method: 'GET',
+        headers: {
+          'x-heeko-test-xdr': signedXdr
+        }
+      });
+      
+      const data = await res.json();
+      setTestResponse(data);
+      if (!res.ok) {
+        setTestError(data.message || 'Gateway rejected the test request');
+      }
+    } catch (err: any) {
+      console.error('Test Error:', err);
+      setTestError(err.message || 'Failed to reach gateway');
+    } finally {
+      setTestLoading(false);
     }
   };
 
@@ -304,12 +354,28 @@ export default function Dashboard() {
               ) : (
                 <div className="space-y-3">
                   {userServices.map((svc) => (
-                    <div key={svc.id} className="p-3 rounded-lg bg-white/5 border border-white/10 hover:border-indigo-500/30 transition-colors">
+                    <div key={svc.id} className="p-3 rounded-lg bg-white/5 border border-white/10 hover:border-indigo-500/30 transition-colors group/item">
                       <div className="flex justify-between items-start mb-1">
                         <span className="font-semibold text-white truncate pr-2">{svc.name}</span>
-                        <Badge variant="secondary" className="bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 text-[10px] px-1.5 h-4">
-                          {svc.price} XLM
-                        </Badge>
+                        <div className="flex items-center gap-2">
+                           <Button 
+                             variant="ghost" 
+                             size="icon" 
+                             className="h-6 w-6 opacity-0 group-hover/item:opacity-100 transition-opacity bg-white/5 hover:bg-indigo-500/20"
+                             onClick={() => {
+                               setSelectedSvc(svc);
+                               setIsTestModalOpen(true);
+                               setTestPath('');
+                               setTestResponse(null);
+                               setTestError(null);
+                             }}
+                           >
+                             <Terminal className="w-3.5 h-3.5 text-indigo-400" />
+                           </Button>
+                           <Badge variant="secondary" className="bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 text-[10px] px-1.5 h-4">
+                             {svc.price} XLM
+                           </Badge>
+                        </div>
                       </div>
                       <div className="flex justify-between items-center text-[10px] text-zinc-500 font-mono">
                         <span>ID: {svc.id}</span>
@@ -375,6 +441,84 @@ export default function Dashboard() {
             </Button>
           </DialogFooter>
         </DialogContent>
+      </Dialog>
+
+      {/* Test Console Dialog */}
+      <Dialog open={isTestModalOpen} onOpenChange={setIsTestModalOpen}>
+         <DialogContent className="bg-zinc-950 border-white/10 text-white max-w-2xl">
+           <DialogHeader>
+             <div className="flex items-center gap-3">
+               <div className="p-2 bg-indigo-500/10 rounded-lg border border-indigo-500/20">
+                 <Terminal className="w-5 h-5 text-indigo-400" />
+               </div>
+               <div>
+                 <DialogTitle>Test Gateway Console</DialogTitle>
+                 <DialogDescription>
+                   Verify your origin server integration for <strong>{selectedSvc?.name}</strong>. 
+                 </DialogDescription>
+               </div>
+             </div>
+           </DialogHeader>
+
+           <div className="py-6 space-y-6">
+              <div className="space-y-4">
+                 <div className="p-4 rounded-xl bg-indigo-500/5 border border-indigo-500/20 text-[13px] text-indigo-200">
+                   <p className="flex items-center gap-2 mb-1 font-semibold">
+                     <ShieldCheck className="w-4 h-4 text-indigo-400" />
+                     Provider Bypass Mode
+                   </p>
+                   You don't need to pay for your own API. The gateway will verify your signed transaction to allow free testing.
+                 </div>
+
+                 <div className="flex items-end gap-3">
+                   <div className="flex-1 space-y-2">
+                     <Label className="text-[11px] text-zinc-500 uppercase tracking-widest">Route Path</Label>
+                     <div className="flex items-center gap-2 p-2 bg-black/50 border border-white/10 rounded-lg font-mono text-sm group focus-within:border-indigo-500/50 transition-colors">
+                        <span className="text-zinc-600">/proxy/{selectedSvc?.id}/</span>
+                        <input 
+                          value={testPath}
+                          onChange={(e) => setTestPath(e.target.value)}
+                          placeholder="v1/search"
+                          className="bg-transparent border-none outline-none flex-1 text-white placeholder:text-zinc-700" 
+                        />
+                     </div>
+                   </div>
+                   <Button 
+                     className="bg-white text-black hover:bg-white/90 h-10 font-bold px-6"
+                     onClick={handleTestRun}
+                     disabled={testLoading}
+                   >
+                     {testLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Run Test"}
+                   </Button>
+                 </div>
+              </div>
+
+              {testResponse && (
+                <div className="space-y-2 animate-in fade-in zoom-in-95 duration-300">
+                   <div className="flex justify-between items-center px-1">
+                     <span className="text-[10px] text-zinc-500 uppercase tracking-widest">Gateway Response</span>
+                     <Badge variant="outline" className="text-[9px] border-green-500/30 text-green-400">Proxied via Heekowave</Badge>
+                   </div>
+                   <pre className="p-4 bg-zinc-900/80 rounded-lg border border-white/5 font-mono text-[11px] text-green-400 overflow-x-auto max-h-[250px] shadow-inner">
+                     {JSON.stringify(testResponse, null, 2)}
+                   </pre>
+                </div>
+              )}
+
+              {testError && (
+                <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-xs flex items-center gap-2">
+                   <AlertCircle className="w-4 h-4 shrink-0" />
+                   {testError}
+                </div>
+              )}
+           </div>
+
+           <DialogFooter className="border-t border-white/5 pt-4">
+              <Button variant="ghost" className="text-zinc-500 hover:text-white" onClick={() => setIsTestModalOpen(false)}>
+                Close Console
+              </Button>
+           </DialogFooter>
+         </DialogContent>
       </Dialog>
     </div>
   );

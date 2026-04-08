@@ -5,3 +5,4 @@ dist
 test-receipt.ts
 docker-compose.yml
 test.txt
+test2.txt

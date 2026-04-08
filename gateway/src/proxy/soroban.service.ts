@@ -10,12 +10,12 @@ export class SorobanService {
 
   constructor(private configService: ConfigService) {
     const rpcUrl = this.configService.get<string>('SOROBAN_RPC_URL') || 'https://soroban-testnet.stellar.org';
-    this.contractId = this.configService.get<string>('BAZAAR_CONTRACT_ID') || 'CBUQPAYXPRXXW7F4DSENDX7NDT5FSFZEIBUMFQLRZPBQ47IUIPAHUAC6';
+    this.contractId = this.configService.get<string>('HEEKOWAVE_CONTRACT_ID') || 'CDXECR7OZG7I2IVCE36NKXJUYDL3ECHNAG4UFEA6C23X67QEVQB2JMQV';
     this.server = new StellarSdk.rpc.Server(rpcUrl);
   }
 
   /**
-   * Fetches all services registered in the Soroban Bazaar contract
+   * Fetches all services registered in the Soroban Heekowave contract
    */
   async getAllServices(): Promise<any[]> {
     try {

@@ -7,8 +7,8 @@ import { Providers } from '@/components/providers';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'Heekowave | The Bazaar',
-  description: 'A decentralized marketplace for AI agent services utilizing the Stellar x402 payment protocol.',
+  title: 'Heekowave',
+  description: 'A decentralized registry for AI agent services utilizing the Stellar x402 payment protocol.',
 };
 
 export default function RootLayout({

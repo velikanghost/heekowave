@@ -42,7 +42,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog"
 
-const RPC_URL = 'https://soroban-testnet.stellar.org';
+const RPC_URL = process.env.NEXT_PUBLIC_RPC_URL || 'https://soroban-testnet.stellar.org';
 
 export default function Home() {
   const { isConnected, publicKey, sign } = useWallet();
@@ -206,9 +206,7 @@ export default function Home() {
             is Here
           </h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-12">
-            Heekowave is building The Bazaar: a decentralized registry of AI
-            agent services and API tools. Buy, sell, and build autonomous
-            workflows natively monetized with USDC.
+            Heekowave is building a decentralized registry of AI agent services and API tools. Buy, sell, and build autonomous workflows natively monetized with USDC.
           </p>
           <div className="flex gap-4">
             <Button
@@ -228,14 +226,14 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Bazaar Registry Grid */}
+      {/* Heekowave Registry Grid */}
       <section className="flex-1 bg-black pb-24">
         <div className="container mx-auto px-6 max-w-7xl">
           <div className="flex items-center justify-between mb-12">
             <div>
               <h2 className="text-3xl font-bold flex items-center gap-3">
                 <Layers className="w-8 h-8 text-indigo-400" />
-                The Bazaar Directory
+                Heekowave Directory
               </h2>
               <p className="text-muted-foreground mt-2">
                 Discover and integrate live AI services directly into your dApps
@@ -248,7 +246,7 @@ export default function Home() {
             {loading ? (
               <div className="col-span-full flex flex-col items-center justify-center py-24 opacity-50">
                 <Loader2 className="w-12 h-12 animate-spin text-indigo-500 mb-4" />
-                <p className="text-lg font-medium">Loading The Bazaar...</p>
+                <p className="text-lg font-medium">Loading Heekowave...</p>
               </div>
             ) : error ? (
               <div className="col-span-full text-center py-24 border border-red-500/20 bg-red-500/5 rounded-3xl">

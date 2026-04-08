@@ -1,9 +1,8 @@
 'use client'
 
-import React from 'react'
 import Link from 'next/link'
 import { useWallet } from '@/lib/wallet-context'
-import { LogIn, LogOut, Wallet, Loader2 } from 'lucide-react'
+import { LogOut, Wallet, Loader2 } from 'lucide-react'
 
 export function Navbar() {
   const { publicKey, connect, disconnect, isConnecting, isConnected } =
@@ -39,7 +38,7 @@ export function Navbar() {
             href="/"
             className="text-sm font-medium transition-colors hover:text-indigo-400 text-foreground/60"
           >
-            The Bazaar
+            Directory
           </Link>
           <Link
             href="/dashboard"

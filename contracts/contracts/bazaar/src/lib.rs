@@ -20,11 +20,11 @@ pub enum DataKey {
 }
 
 #[contract]
-pub struct BazaarContract;
+pub struct HeekowaveContract;
 
 #[contractimpl]
-impl BazaarContract {
-    /// Register a new API service in the Bazaar
+impl HeekowaveContract {
+    /// Register a new API service in Heekowave
     pub fn register(
         env: Env,
         provider: Address,

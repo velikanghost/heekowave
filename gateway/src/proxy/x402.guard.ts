@@ -1,4 +1,3 @@
-import * as fs from 'fs';
 import {
   Injectable,
   CanActivate,
@@ -7,14 +6,10 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { ProxyService } from './proxy.service.js';
-import {
-  decodePaymentHeader,
-  PaymentRequirements,
-} from 'x402-stellar';
+import { decodePaymentHeader } from 'x402-stellar';
 import { Request } from 'express';
 import { PrismaService } from '../prisma/prisma.service.js';
 import {
-  Keypair,
   TransactionBuilder,
   Networks,
   Transaction,
@@ -36,7 +31,7 @@ export class X402Guard implements CanActivate {
     const api = await this.proxyService.getApi(apiId);
     if (!api) {
       throw new HttpException(
-        'API not found in Bazaar registry',
+        'API not found in Heekowave registry',
         HttpStatus.NOT_FOUND,
       );
     }
@@ -98,7 +93,8 @@ export class X402Guard implements CanActivate {
 
       // Double spend prevention
       // The x402-stellar 'decode' function typically extracts the transaction `hash`
-      const paymentHash = payload?.payload?.hash || payload?.hash || lHttpHeader.substring(0, 64);
+      const paymentHash =
+        payload?.payload?.hash || payload?.hash || lHttpHeader.substring(0, 64);
 
       const existing = await this.prisma.paymentReceipt.findUnique({
         where: { paymentHash },
@@ -113,12 +109,16 @@ export class X402Guard implements CanActivate {
 
       // Native on-chain verification using Horizon
       const server = new Horizon.Server(
-        process.env.STELLAR_HORIZON_URL || 'https://horizon-testnet.stellar.org',
+        process.env.STELLAR_HORIZON_URL ||
+          'https://horizon-testnet.stellar.org',
       );
 
       let txResponse;
       try {
-        txResponse = await server.transactions().transaction(paymentHash).call();
+        txResponse = await server
+          .transactions()
+          .transaction(paymentHash)
+          .call();
       } catch (err) {
         throw new HttpException(
           'Transaction not found on the Stellar network',
@@ -169,7 +169,10 @@ export class X402Guard implements CanActivate {
       return true;
     } catch (e) {
       const fs = await import('fs');
-      fs.appendFileSync('verification_error.log', `[${new Date().toISOString()}] ${e.stack || e.message}\n`);
+      fs.appendFileSync(
+        'verification_error.log',
+        `[${new Date().toISOString()}] ${e.stack || e.message}\n`,
+      );
       console.error('X402 Verification Error:', e);
       if (e instanceof HttpException) throw e;
       throw new HttpException(

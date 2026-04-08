@@ -1,22 +1,44 @@
-# Soroban Project
+# 🦀 Heekowave Smart Contract
 
-## Project Structure
+The core of Heekowave is a decentralized on-chain service registry built in Rust and deployed via Soroban to the Stellar Testnet.
 
-This repository uses the recommended structure for a Soroban project:
+It acts as the single source of truth for AI agents attempting to natively discover and route computing. 
 
-```text
-.
-├── contracts
-│   └── hello_world
-│       ├── src
-│       │   ├── lib.rs
-│       │   └── test.rs
-│       └── Cargo.toml
-├── Cargo.toml
-└── README.md
+## Registration Standard
+
+The contract stores the data required for the `x402` payment negotiation protocols to function securely. 
+
+```rust
+pub struct Service {
+    pub id: u64,
+    pub provider: Address, // The destination wallet for all API payments
+    pub name: String,
+    pub endpoint: String,
+    pub price: i128,       // Minimum XLM/USDC needed to clear the paywall
+    pub tags: Vec<String>,
+}
 ```
 
-- New Soroban contracts can be put in `contracts`, each in their own directory. There is already a `hello_world` contract in there to get you started.
-- If you initialized this project with any other example contracts via `--with-example`, those contracts will be in the `contracts` directory as well.
-- Contracts should have their own `Cargo.toml` files that rely on the top-level `Cargo.toml` workspace for their dependencies.
-- Frontend libraries can be added to the top-level directory as well. If you initialized this project with a frontend template via `--frontend-template` you will have those files already included.
+## Contract Lifecycle
+
+1. **The Live API Directory**: Hydrates data via the local Node Gateway, visualizing the exact endpoints available on the Heekowave registry.
+2. The Heekowave Gateway operates an independent `SorobanService` daemon polling the `get_all_services()` host function every 30 seconds to syndicate all available mappings.
+3. The Gateway validates subsequent Agent-provided Base64 XDRs against the required `price` indexed from the `Service` mapping!
+
+## Getting Started
+
+To test or deploy modifications to Heekowave:
+
+```bash
+# Build the Wasm binaries
+stellar contract build --optimize
+
+# Run the unit tests locally (which perform mock auth verifications)
+cargo test
+
+# Deploy to Testnet
+stellar contract deploy \
+  --wasm target/wasm32v1-none/release/bazaar.wasm \
+  --source-account <YOUR_ACCOUNT> \
+  --network testnet 
+```

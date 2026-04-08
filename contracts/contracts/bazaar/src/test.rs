@@ -8,8 +8,8 @@ fn test_register_and_get() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let contract_id = env.register_contract(None, BazaarContract);
-    let client = BazaarContractClient::new(&env, &contract_id);
+    let contract_id = env.register_contract(None, HeekowaveContract);
+    let client = HeekowaveContractClient::new(&env, &contract_id);
 
     let provider = Address::generate(&env);
     let name = String::from_str(&env, "Weather API");
@@ -33,8 +33,8 @@ fn test_update_price() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let contract_id = env.register_contract(None, BazaarContract);
-    let client = BazaarContractClient::new(&env, &contract_id);
+    let contract_id = env.register_contract(None, HeekowaveContract);
+    let client = HeekowaveContractClient::new(&env, &contract_id);
 
     let provider = Address::generate(&env);
     let name = String::from_str(&env, "Trading Signals");

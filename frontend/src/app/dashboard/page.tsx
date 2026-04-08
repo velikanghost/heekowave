@@ -26,8 +26,8 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 
-const BAZAAR_CONTRACT_ID = 'CBUQPAYXPRXXW7F4DSENDX7NDT5FSFZEIBUMFQLRZPBQ47IUIPAHUAC6';
-const RPC_URL = 'https://soroban-testnet.stellar.org';
+const HEEKOWAVE_CONTRACT_ID = process.env.NEXT_PUBLIC_HEEKOWAVE_CONTRACT_ID || '';
+const RPC_URL = process.env.NEXT_PUBLIC_RPC_URL || 'https://soroban-testnet.stellar.org';
 
 export default function Dashboard() {
   const { publicKey, sign, isConnected } = useWallet();
@@ -103,7 +103,7 @@ export default function Dashboard() {
         throw new Error("Account not found on Testnet. Please fund your account via Friendbot.");
       });
 
-      const contract = new Contract(BAZAAR_CONTRACT_ID);
+      const contract = new Contract(HEEKOWAVE_CONTRACT_ID);
       
       const tx = new TransactionBuilder(sourceAccount, {
         fee: '10000', // Basic fee, will be updated by simulation
@@ -211,7 +211,7 @@ export default function Dashboard() {
         <div className="container mx-auto px-6 py-12 max-w-7xl">
           <h1 className="text-4xl font-bold tracking-tight text-white mb-4">Developer Dashboard</h1>
           <p className="text-muted-foreground text-lg max-w-2xl">
-            Monetize your AI agent APIs directly on Stellar. Register your endpoint to the decentralized Bazaar registry and start receiving x402 auto-payments.
+            Monetize your AI agent APIs directly on Stellar. Register your endpoint to the decentralized Heekowave directory and start receiving x402 auto-payments.
           </p>
         </div>
       </div>

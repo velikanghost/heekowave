@@ -1,4 +1,4 @@
-# 🛡️ Heekowave x402 Gateway
+# Heekowave x402 Gateway
 
 The Heekowave Gateway is the impenetrable paywall interceptor governing the Agentic Economy, built with **NestJS**, **Prisma**, and `@stellar/stellar-sdk`.
 

@@ -11,6 +11,7 @@ import {
   Loader2,
   ExternalLink,
 } from 'lucide-react'
+import { IntegrationDrawer } from '@/components/integration-drawer'
 import { useWallet } from '@/lib/wallet-context'
 import { Badge } from '@/components/ui/badge'
 import { useUIStore } from '@/store/ui-store'
@@ -34,7 +35,7 @@ export default function Dashboard() {
 
 function DashboardContent() {
   const { publicKey, isConnected } = useWallet()
-  const { openRegistration } = useUIStore()
+  const { openRegistration, openIntegration } = useUIStore()
   const { services, fetchServices, isLoading: fetching } = useServicesStore()
   const [txHash, setTxHash] = useState<string | null>(null)
   const [showSuccess, setShowSuccess] = useState(false)
@@ -90,7 +91,7 @@ function DashboardContent() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="text-[11px] font-mono text-zinc-400 space-y-5 pt-6">
-                <p className="leading-relaxed whitespace-normal break-words">
+                <p className="leading-relaxed whitespace-normal wrap-break-word">
                   The Heekowave Gateway interceptor handles 402 Payment
                   challenges automatically. Route your agents here:
                 </p>
@@ -100,13 +101,13 @@ function DashboardContent() {
                 <div className="space-y-3 pt-2">
                   <div className="flex items-start gap-3">
                     <div className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 shrink-0" />
-                    <p className="break-words">
+                    <p className="wrap-break-word">
                       402 Verification: Status checked on-chain via Soroban.
                     </p>
                   </div>
                   <div className="flex items-start gap-3">
                     <div className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 shrink-0" />
-                    <p className="break-words">
+                    <p className="wrap-break-word">
                       L-HTTP Auth: Cryptographic receipts verified per-request.
                     </p>
                   </div>
@@ -142,7 +143,8 @@ function DashboardContent() {
                     {userServices.map((svc) => (
                       <div
                         key={svc.id}
-                        className="p-5 bg-black border border-border hover:border-primary/50 transition-all group/item relative overflow-hidden"
+                        onClick={() => openIntegration(svc)}
+                        className="p-5 bg-black border border-border hover:border-primary/50 transition-all group/item relative overflow-hidden cursor-pointer active:scale-[0.99]"
                       >
                         <div className="flex justify-between items-start mb-4 relative z-10">
                           <div className="space-y-1">
@@ -227,6 +229,7 @@ function DashboardContent() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <IntegrationDrawer />
     </div>
   )
 }

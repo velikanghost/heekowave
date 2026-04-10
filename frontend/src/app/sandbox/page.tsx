@@ -290,10 +290,10 @@ export default function AgentSandbox() {
         <div className="space-y-1">
           <h1 className="text-xl font-black uppercase text-white tracking-widest flex items-center gap-2">
             <Cpu className="w-5 h-5 text-primary" />
-            Agent Workspace
+            Sandbox
           </h1>
-          <p className="text-xs font-mono text-zinc-500 uppercase tracking-widest">
-            Local Execution Environment
+          <p className="text-xs font-mono text-zinc-500 uppercase tracking-widest leading-relaxed">
+            Autonomous Agent Environment
           </p>
         </div>
 
@@ -381,7 +381,7 @@ export default function AgentSandbox() {
             <div className="flex items-center gap-2 border-b border-border pb-3">
               <Wallet className="w-4 h-4 text-zinc-400" />
               <h2 className="text-xs font-black uppercase tracking-widest text-white">
-                Ephemeral Wallet
+                Agent Wallet
               </h2>
             </div>
 
@@ -407,9 +407,11 @@ export default function AgentSandbox() {
               </div>
             ) : (
               <>
-                <p className="text-xs text-zinc-400 leading-relaxed font-medium whitespace-normal wrap-break-word">
-                  Generate a temporary Stellar wallet funded by Friendbot to
-                  allow the agent to execute 402 payments autonomously.
+                <p className="text-xs text-zinc-400 leading-relaxed font-medium whitespace-normal wrap-break-word italic">
+                  This workspace simulates how an autonomous agent interacts
+                  with Heekowave. Generate a temporary wallet to allow the agent
+                  to manage its own budget and execute x402 payments without
+                  human intervention.
                 </p>
                 <Button
                   onClick={handleBootSandbox}

@@ -7,12 +7,20 @@ import pg from 'pg';
 @Injectable()
 export class PrismaService extends PrismaClient implements OnModuleInit {
   constructor() {
+    if (!process.env.DATABASE_URL) {
+      console.error('CRITICAL: DATABASE_URL environment variable is missing.');
+    }
     const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
     const adapter = new PrismaPg(pool);
     super({ adapter });
   }
 
   async onModuleInit() {
-    await this.$connect();
+    try {
+      await this.$connect();
+    } catch (err) {
+      console.error('FAILED TO CONNECT TO DATABASE:', err.message);
+      throw err;
+    }
   }
 }

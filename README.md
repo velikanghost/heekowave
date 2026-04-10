@@ -19,9 +19,11 @@ Heekowave solves these challenges by modernizing the `402 Payment Required` HTTP
 
 1. **Decentralized Discovery**
    - A Soroban-based on-chain registry where service providers define endpoints and micro-prices.
-2. **x402 Enforcement Gateway**
-   - A specialized proxy that intercepts requests and challenges agents with a cryptographic payment requirement.
-3. **Autonomous Settlement**
+2. **Batch Registration System**
+   - Optimized for scale: Register dozens of API services in a single on-chain transaction.
+3. **x402 Enforcement Gateway**
+   - A specialized proxy that intercepts requests and challenges agents with a cryptographic payment requirement using human-readable slug-based routing.
+4. **Autonomous Settlement**
    - Agents sign verifiable transaction receipts (L-HTTP) to clear the paywall in milliseconds.
 
 ## The Agentic Settlement Logic
@@ -47,7 +49,8 @@ The agent detects the 402, executes a Stellar transaction, and generates an `L-H
 const receipt = {
   hash: "TX_HASH",
   signer: "AGENT_PUBLIC_KEY",
-  timestamp: Date.now()
+  timestamp: Date.now(),
+  x402Version: "1.0.0"
 };
 
 // Re-request with receipt
@@ -60,12 +63,12 @@ headers: {
 
 ```mermaid
 sequenceDiagram
-    Agent->>Gateway: GET /proxy/service-1 (No Auth)
-    Gateway->>Gateway: Check Registry Contract
+    Agent->>Gateway: GET /proxy/SGHYAHS/weather-api/ (No Auth)
+    Gateway->>Gateway: Resolve Provider + Slug
     Gateway-->>Agent: HTTP 402 + Payment Details
     Agent->>Stellar: Execute Payment (XLM)
     Stellar-->>Agent: TX Hash
-    Agent->>Gateway: GET /proxy/service-1 (Header: l-http)
+    Agent->>Gateway: GET /proxy/SGHYAHS/weather-api/ (Header: l-http)
     Gateway->>Stellar: Verify TX vs Contract Price
     Gateway->>Origin: Fetch Data
     Origin-->>Gateway: 200 OK
@@ -79,10 +82,10 @@ heekowave/
 ├── contracts/        # Soroban Smart Contracts (Rust)
 │   └── src/lib.rs    # On-chain Service Registry
 ├── gateway/          # NestJS x402 Interceptor Proxy
-│   ├── src/proxy/    # x402.guard.ts & Routing logic
-│   └── prisma/       # Indexed service cache
-└── frontend/         # Next.js 15 Marketplace Dashboard
-    ├── src/store/    # Zustand Global State Management
+│   ├── src/proxy/    # x402.guard.ts & Slug-based routing
+│   └── prisma/       # Fast indexed receipt & service cache
+└── frontend/         # Next.js 15 Marketplace & Dashboard
+    ├── src/store/    # Zustand Global State with Optimistic UI
     └── src/app/      # Registry & Agent Sandbox UI
 ```
 
@@ -90,11 +93,11 @@ heekowave/
 
 ### Registry Contract (Soroban)
 
-The single source of truth for pricing. It ensures providers can update endpoints without breaking the gateway synchronization.
+The single source of truth for pricing. Supports `batch_register` to allowing providers to scale their API catalog efficiently in the agentic economy.
 
 ### x402 Gateway (NestJS)
 
-A high-performance proxy that syndicates on-chain metadata into a local cache for sub-second verification latency.
+A high-performance proxy targeting `/:shortAddr/:serviceSlug/*`. It syndicates on-chain metadata every 5 seconds for near-instant indexing of new services.
 
 ### Agent Sandbox
 
@@ -152,8 +155,8 @@ pnpm dev
 ## How to Test the Product
 
 1. **Connect Wallet**: Visit `http://localhost:3000` and connect Freighter.
-2. **Register a Service**: Click **"Deploy a Service"**. Define a name, Origin URL (e.g., a mock API), and XLM price per request.
-3. **Verify On-Chain**: The registration broadcasts to Soroban. Once confirmed, it appears in the **Marketplace**.
+2. **Register Services**: Click **"Deploy a Service"**. You can now paste a JSON block of multiple APIs to use the **Bulk Deployment** system.
+3. **Verify On-Chain**: The registration broadcasts to Soroban. Once confirmed, it appears in the **Marketplace** (Registry) immediately via the Optimistic UI.
 4. **Agent Simulation**:
    - Go to the **Sandbox** page.
    - Select your newly registered service.

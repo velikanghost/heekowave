@@ -6,7 +6,7 @@ import { List, LayoutDashboard, TerminalSquare } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const navigation = [
-  { name: 'Marketplace', href: '/registry', icon: List },
+  { name: 'Registry', href: '/registry', icon: List },
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Sandbox', href: '/sandbox', icon: TerminalSquare },
 ]

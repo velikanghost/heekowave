@@ -1,12 +1,11 @@
-# Heekowave 🌊
+# Heekowave
 
 ![Stellar](https://img.shields.io/badge/Stellar-Testnet-blue)
-![Soroban](https://img.shields.io/badge/Soroban-Powered-black)
 ![x402](https://img.shields.io/badge/Protocol-x402-emerald)
 
 > The Autonomous Settlement Gateway & API Registry for the Agentic Economy.
 
-## 🎯 Problem Statement
+## Problem Statement
 
 AI Agents are the new consumers of the internet, yet they face a critical infrastructure bottleneck: **The Credit Card Wall**.
 
@@ -14,7 +13,7 @@ AI Agents are the new consumers of the internet, yet they face a critical infras
 - Human-centric payment flows (KYC, credit cards, monthly billing) are incompatible with sub-second agentic logic.
 - APIs lack a native "Pay-Per-Request" settlement layer that operates without human intervention.
 
-## 💡 Solution
+## Solution
 
 Heekowave solves these challenges by modernizing the `402 Payment Required` HTTP status using the **Stellar blockchain**.
 
@@ -25,7 +24,7 @@ Heekowave solves these challenges by modernizing the `402 Payment Required` HTTP
 3. **Autonomous Settlement**
    - Agents sign verifiable transaction receipts (L-HTTP) to clear the paywall in milliseconds.
 
-## 🧠 The Agentic Settlement Logic
+## The Agentic Settlement Logic
 
 Heekowave leverages the **x402 Protocol** to allow agents to pay for data programmatically.
 
@@ -73,7 +72,7 @@ sequenceDiagram
     Gateway-->>Agent: Data Delivered
 ```
 
-## 🏗 Architecture
+## Architecture
 
 ```plaintext
 heekowave/
@@ -87,7 +86,7 @@ heekowave/
     └── src/app/      # Registry & Agent Sandbox UI
 ```
 
-## 🔧 Core Components
+## Core Components
 
 ### Registry Contract (Soroban)
 
@@ -101,7 +100,7 @@ A high-performance proxy that syndicates on-chain metadata into a local cache fo
 
 An integrated environment to test the full "Payment-for-Data" loop using a temporary autonomous wallet.
 
-## 🚀 Getting Started for Judges
+## Getting Started
 
 ### 1. Prerequisites
 
@@ -150,7 +149,7 @@ Run everything concurrently (Frontend, Gateway, Database):
 pnpm dev
 ```
 
-## 🎯 How to Test the Product
+## How to Test the Product
 
 1. **Connect Wallet**: Visit `http://localhost:3000` and connect Freighter.
 2. **Register a Service**: Click **"Deploy a Service"**. Define a name, Origin URL (e.g., a mock API), and XLM price per request.

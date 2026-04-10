@@ -1,6 +1,6 @@
-@import "tailwindcss";
-@import "tw-animate-css";
-@import "shadcn/tailwind.css";
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@import 'shadcn/tailwind.css';
 
 @custom-variant dark (&:is(.dark *));
 
@@ -55,7 +55,7 @@
   --card-foreground: oklch(0.985 0 0);
   --popover: oklch(0.12 0 0);
   --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.68 0.19 235); /* QuickNode Blue #00A3FF approximation in oklch */
+  --primary: oklch(0.68 0.19 235);
   --primary-foreground: oklch(0.985 0 0);
   --secondary: oklch(0.18 0 0);
   --secondary-foreground: oklch(0.985 0 0);

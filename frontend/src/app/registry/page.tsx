@@ -44,7 +44,12 @@ const RPC_URL =
 export default function Registry() {
   const { isConnected, publicKey, sign } = useWallet()
   const { openRegistration } = useUIStore()
-  const { services, fetchServices, isLoading: loading, error } = useServicesStore()
+  const {
+    services,
+    fetchServices,
+    isLoading: loading,
+    error,
+  } = useServicesStore()
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list')
 
   // Integration Drawer State
@@ -415,7 +420,7 @@ export default function Registry() {
                         'WAITING_FOR_WALLET'
                       ) : (
                         <>
-                          AUTHORIZE_PAYMENT{' '}
+                          AUTHORIZE PAYMENT{' '}
                           <Zap className="ml-2 w-4 h-4 fill-current" />
                         </>
                       )}

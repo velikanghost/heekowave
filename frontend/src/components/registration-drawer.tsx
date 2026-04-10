@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Rocket, ShieldCheck, Loader2, AlertCircle } from 'lucide-react'
+import { RegistrationSuccess } from './registration-success'
 import { useWallet } from '@/lib/wallet-context'
 import { useUIStore } from '@/store/ui-store'
 import { useServicesStore } from '@/store/services-store'
@@ -42,6 +43,8 @@ export function RegistrationDrawer() {
     endpoint: '',
     tags: '',
   })
+  const [isSuccess, setIsSuccess] = useState(false)
+  const [txHash, setTxHash] = useState<string | null>(null)
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target
@@ -108,13 +111,14 @@ export function RegistrationDrawer() {
       )
 
       if (result.status !== 'ERROR') {
-        // Clear form and close
-        setFormData({ name: '', price: '', endpoint: '', tags: '' })
-        closeRegistration()
-
         // Refresh stores via Zustand
         fetchServices()
         fetchStats()
+
+        // Show success screen
+        setTxHash(result.hash)
+        setIsSuccess(true)
+        setFormData({ name: '', price: '', endpoint: '', tags: '' })
       } else {
         throw new Error(`Transaction failed with status: ${result.status}`)
       }
@@ -126,130 +130,147 @@ export function RegistrationDrawer() {
     }
   }
 
+  const handleDrawerClose = () => {
+    closeRegistration()
+    // Reset success state after drawer animation
+    setTimeout(() => {
+      setIsSuccess(false)
+      setTxHash(null)
+    }, 300)
+  }
+
   return (
-    <Drawer direction="right" open={isOpen} onOpenChange={closeRegistration}>
+    <Drawer direction="right" open={isOpen} onOpenChange={handleDrawerClose}>
       <DrawerContent className="sm:max-w-3xl p-0 border-l-2 border-border bg-zinc-950 text-white flex flex-col h-full rounded-none before:hidden">
-        <div className="flex-1 overflow-y-auto w-full p-8 space-y-8">
-          <DrawerHeader className="px-0 pt-0 text-left">
-            <DrawerTitle className="text-2xl font-black uppercase tracking-tighter flex items-center gap-3">
-              <Rocket className="w-7 h-7 text-primary" />
-              Register Service
-            </DrawerTitle>
-            <DrawerDescription className="text-zinc-500 font-mono text-[10px] uppercase tracking-widest mt-2 leading-relaxed">
-              Define your API endpoints and pricing model on the Stellar chain.
-            </DrawerDescription>
-          </DrawerHeader>
+        {isSuccess && txHash ? (
+          <RegistrationSuccess
+            txHash={txHash || ''}
+            onClose={handleDrawerClose}
+          />
+        ) : (
+          <div className="flex-1 overflow-y-auto w-full p-8 space-y-8 animate-in fade-in duration-500">
+            <DrawerHeader className="px-0 pt-0 text-left">
+              <DrawerTitle className="text-2xl font-black uppercase tracking-tighter flex items-center gap-3">
+                <Rocket className="w-7 h-7 text-primary" />
+                Register Service
+              </DrawerTitle>
+              <DrawerDescription className="text-zinc-500 font-mono text-[10px] uppercase tracking-widest mt-2 leading-relaxed">
+                Define your API endpoints and pricing model on the Stellar
+                chain.
+              </DrawerDescription>
+            </DrawerHeader>
 
-          <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label
+                    htmlFor="name"
+                    className="text-[10px] uppercase font-mono text-zinc-500 tracking-widest"
+                  >
+                    Service Name
+                  </Label>
+                  <Input
+                    id="name"
+                    value={formData.name}
+                    onChange={handleInputChange}
+                    placeholder="e.g. Trading Alpha"
+                    className="bg-black border-border rounded-none focus:border-primary focus:ring-0 text-xs font-mono h-11 text-white"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label
+                    htmlFor="price"
+                    className="text-[10px] uppercase font-mono text-zinc-500 tracking-widest"
+                  >
+                    Price (XLM)
+                  </Label>
+                  <Input
+                    id="price"
+                    type="number"
+                    value={formData.price}
+                    onChange={handleInputChange}
+                    placeholder="1.00"
+                    className="bg-black border-border rounded-none focus:border-primary focus:ring-0 text-xs font-mono h-11 text-white"
+                  />
+                </div>
+              </div>
+
               <div className="space-y-2">
                 <Label
-                  htmlFor="name"
+                  htmlFor="endpoint"
                   className="text-[10px] uppercase font-mono text-zinc-500 tracking-widest"
                 >
-                  Service Name
+                  Origin Server URL
                 </Label>
                 <Input
-                  id="name"
-                  value={formData.name}
+                  id="endpoint"
+                  value={formData.endpoint}
                   onChange={handleInputChange}
-                  placeholder="e.g. Trading Alpha"
+                  placeholder="https://api.yourbackend.com/v1"
                   className="bg-black border-border rounded-none focus:border-primary focus:ring-0 text-xs font-mono h-11 text-white"
                 />
               </div>
+
               <div className="space-y-2">
                 <Label
-                  htmlFor="price"
+                  htmlFor="tags"
                   className="text-[10px] uppercase font-mono text-zinc-500 tracking-widest"
                 >
-                  Price (XLM)
+                  Tags (Comma Sep)
                 </Label>
                 <Input
-                  id="price"
-                  type="number"
-                  value={formData.price}
+                  id="tags"
+                  value={formData.tags}
                   onChange={handleInputChange}
-                  placeholder="1.00"
+                  placeholder="DeFi, Analytics, Bot"
                   className="bg-black border-border rounded-none focus:border-primary focus:ring-0 text-xs font-mono h-11 text-white"
                 />
               </div>
-            </div>
 
-            <div className="space-y-2">
-              <Label
-                htmlFor="endpoint"
-                className="text-[10px] uppercase font-mono text-zinc-500 tracking-widest"
-              >
-                Origin Server URL
-              </Label>
-              <Input
-                id="endpoint"
-                value={formData.endpoint}
-                onChange={handleInputChange}
-                placeholder="https://api.yourbackend.com/v1"
-                className="bg-black border-border rounded-none focus:border-primary focus:ring-0 text-xs font-mono h-11 text-white"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label
-                htmlFor="tags"
-                className="text-[10px] uppercase font-mono text-zinc-500 tracking-widest"
-              >
-                Tags (Comma Sep)
-              </Label>
-              <Input
-                id="tags"
-                value={formData.tags}
-                onChange={handleInputChange}
-                placeholder="DeFi, Analytics, Bot"
-                className="bg-black border-border rounded-none focus:border-primary focus:ring-0 text-xs font-mono h-11 text-white"
-              />
-            </div>
-
-            <div className="p-5 bg-primary/5 border border-primary/20 text-primary text-[10px] font-mono leading-relaxed space-y-3">
-              <div className="flex items-center gap-2">
-                <ShieldCheck className="w-5 h-5" />
-                <span className="font-black uppercase tracking-widest text-[11px]">
-                  Contract Auth Required
-                </span>
+              <div className="p-5 bg-primary/5 border border-primary/20 text-primary text-[10px] font-mono leading-relaxed space-y-3">
+                <div className="flex items-center gap-2">
+                  <ShieldCheck className="w-5 h-5" />
+                  <span className="font-black uppercase tracking-widest text-[11px]">
+                    Contract Auth Required
+                  </span>
+                </div>
+                <p className="opacity-80">
+                  Deploying this service broadcasts your configuration to the
+                  Soroban directory. Fees will be paid in XLM from your
+                  connected wallet.
+                </p>
               </div>
-              <p className="opacity-80">
-                Deploying this service broadcasts your configuration to the
-                Soroban directory. Fees will be paid in XLM from your connected
-                wallet.
-              </p>
-            </div>
 
-            {error && (
-              <div className="p-4 bg-red-500/10 border border-red-500/20 text-red-500 text-[10px] font-mono uppercase tracking-widest animate-in fade-in slide-in-from-top-2">
-                <AlertCircle className="w-4 h-4 inline mr-2 -mt-0.5" />
-                {error}
-              </div>
-            )}
-          </div>
-
-          <div className="mt-auto pt-8">
-            <Button
-              size="lg"
-              onClick={handleDeploy}
-              disabled={loading || !isConnected}
-              className="w-full bg-primary hover:bg-primary/90 text-black font-black uppercase tracking-widest h-14 rounded-none transition-all active:scale-[0.97] border-none shadow-xl shadow-primary/10"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="mr-2 h-6 w-6 animate-spin" />
-                  TRANSACTION IN PROGRESS...
-                </>
-              ) : (
-                <>
-                  <Rocket className="mr-2 h-6 w-6" />
-                  EXECUTE ON-CHAIN DEPLOY
-                </>
+              {error && (
+                <div className="p-4 bg-red-500/10 border border-red-500/20 text-red-500 text-[10px] font-mono uppercase tracking-widest animate-in fade-in slide-in-from-top-2">
+                  <AlertCircle className="w-4 h-4 inline mr-2 -mt-0.5" />
+                  {error}
+                </div>
               )}
-            </Button>
+            </div>
+
+            <div className="mt-auto pt-8">
+              <Button
+                size="lg"
+                onClick={handleDeploy}
+                disabled={loading || !isConnected}
+                className="w-full bg-primary hover:bg-primary/90 text-black font-black uppercase tracking-widest h-14 rounded-none transition-all active:scale-[0.97] border-none shadow-xl shadow-primary/10"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="mr-2 h-6 w-6 animate-spin" />
+                    TRANSACTION IN PROGRESS...
+                  </>
+                ) : (
+                  <>
+                    <Rocket className="mr-2 h-6 w-6" />
+                    EXECUTE ON-CHAIN DEPLOY
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
-        </div>
+        )}
       </DrawerContent>
     </Drawer>
   )

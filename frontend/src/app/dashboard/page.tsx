@@ -39,6 +39,13 @@ function DashboardContent() {
   const { services, fetchServices, isLoading: fetching } = useServicesStore()
   const [txHash, setTxHash] = useState<string | null>(null)
   const [showSuccess, setShowSuccess] = useState(false)
+  const [copiedId, setCopiedId] = useState<string | null>(null)
+
+  const handleCopy = (text: string, id: string) => {
+    navigator.clipboard.writeText(text)
+    setCopiedId(id)
+    setTimeout(() => setCopiedId(null), 2000)
+  }
 
   const gatewayUrl =
     process.env.NEXT_PUBLIC_GATEWAY_URL || 'http://localhost:3002'
@@ -95,8 +102,11 @@ function DashboardContent() {
                   The Heekowave Gateway interceptor handles 402 Payment
                   challenges automatically. Route your agents here:
                 </p>
-                <div className="p-4 bg-black border border-border text-primary break-all select-all hover:border-primary/50 transition-colors font-bold overflow-hidden">
-                  {gatewayUrl}/proxy/{'{service_id}'}/
+                <div 
+                  onClick={() => handleCopy(`${gatewayUrl}/proxy/{short_addr}/{slug}/`, 'proxy-base')}
+                  className={`p-4 bg-black border break-all select-all transition-colors font-bold overflow-hidden cursor-pointer ${copiedId === 'proxy-base' ? 'border-primary text-primary' : 'border-border text-primary hover:border-primary/50'}`}
+                >
+                  {copiedId === 'proxy-base' ? 'BASE PATTERN COPIED!' : `${gatewayUrl}/proxy/{short_addr}/{slug}/`}
                 </div>
                 <div className="space-y-3 pt-2">
                   <div className="flex items-start gap-3">
@@ -146,27 +156,58 @@ function DashboardContent() {
                         onClick={() => openIntegration(svc)}
                         className="p-5 bg-black border border-border hover:border-primary/50 transition-all group/item relative overflow-hidden cursor-pointer active:scale-[0.99]"
                       >
-                        <div className="flex justify-between items-start mb-4 relative z-10">
-                          <div className="space-y-1">
-                            <span className="text-sm font-black uppercase tracking-tight text-white">
-                              {svc.name}
+                        <div className="flex flex-col gap-3 relative z-10 text-left">
+                          <div className="flex justify-between items-start">
+                            <div className="space-y-1">
+                              <span className="text-sm font-black uppercase tracking-tight text-white">
+                                {svc.name}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-3">
+                              <Badge className="bg-primary/10 text-primary border border-primary/20 text-[10px] font-mono px-3 h-6 rounded-none font-bold">
+                                {svc.price} XLM
+                              </Badge>
+                            </div>
+                          </div>
+
+                          <div className="space-y-2">
+                             <div 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleCopy(svc.endpoint, `direct-${svc.id}`);
+                              }}
+                              className={`p-2 bg-zinc-950 border transition-all cursor-pointer group/copy ${copiedId === `direct-${svc.id}` ? 'border-primary/50' : 'border-zinc-800/50 hover:border-zinc-700'}`}
+                            >
+                              <p className="text-[8px] font-mono text-zinc-600 uppercase mb-0.5 tracking-widest">Direct Endpoint</p>
+                              <p className={`text-[9px] font-mono break-all leading-tight ${copiedId === `direct-${svc.id}` ? 'text-primary' : 'text-zinc-400'}`}>
+                                <span className="text-zinc-500 font-bold mr-1">DIRECT:</span>
+                                {copiedId === `direct-${svc.id}` ? 'COPIED!' : svc.endpoint}
+                              </p>
+                            </div>
+
+                            <div 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const url = `${gatewayUrl}/proxy/${svc.provider.slice(0, 3)}${svc.provider.slice(-4)}/${svc.slug}/`;
+                                handleCopy(url, `proxy-${svc.id}`);
+                              }}
+                              className={`p-2 bg-zinc-950 border transition-all cursor-pointer group/copy ${copiedId === `proxy-${svc.id}` ? 'border-primary/50' : 'border-zinc-800/50 hover:border-zinc-700'}`}
+                            >
+                              <p className="text-[8px] font-mono text-zinc-600 uppercase mb-0.5 tracking-widest">Proxy Endpoint</p>
+                              <p className={`text-[9px] font-mono break-all leading-tight ${copiedId === `proxy-${svc.id}` ? 'text-primary' : 'text-primary/70'}`}>
+                                <span className="text-primary font-black mr-1 uppercase">Proxy:</span>
+                                {copiedId === `proxy-${svc.id}` ? 'COPIED!' : `${gatewayUrl}/proxy/${svc.provider.slice(0, 3)}${svc.provider.slice(-4)}/${svc.slug}/`}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="flex justify-between items-center text-[9px] font-mono text-zinc-500 uppercase tracking-widest mt-1">
+                            <span>Service ID: {svc.id.slice(0, 8)}...</span>
+                            <span className="text-emerald-500 flex items-center gap-1.5 font-black">
+                              <CheckCircle2 className="w-3.5 h-3.5" />
+                              LIVE ON TESTNET
                             </span>
-                            <p className="text-[9px] font-mono text-zinc-500 truncate max-w-[250px]">
-                              {svc.endpoint}
-                            </p>
                           </div>
-                          <div className="flex items-center gap-3">
-                            <Badge className="bg-primary/10 text-primary border border-primary/20 text-[10px] font-mono px-3 h-6 rounded-none font-bold">
-                              {svc.price} XLM
-                            </Badge>
-                          </div>
-                        </div>
-                        <div className="flex justify-between items-center text-[9px] font-mono text-zinc-500 uppercase tracking-widest relative z-10">
-                          <span>Service ID: {svc.id}</span>
-                          <span className="text-emerald-500 flex items-center gap-1.5 font-black">
-                            <CheckCircle2 className="w-3.5 h-3.5" />
-                            LIVE ON TESTNET
-                          </span>
                         </div>
                         <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 blur-3xl rounded-full -mr-16 -mt-16 pointer-events-none" />
                       </div>

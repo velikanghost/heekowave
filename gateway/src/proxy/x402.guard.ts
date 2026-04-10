@@ -25,10 +25,10 @@ export class X402Guard implements CanActivate {
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const req = context.switchToHttp().getRequest<Request>();
-    const apiId = req.params.apiId as string;
+    const { shortAddr, serviceSlug } = req.params as { shortAddr: string; serviceSlug: string };
 
-    // Await the new async DB fetch
-    const api = await this.proxyService.getApi(apiId);
+    // Look up API by short address and slug
+    const api = await this.proxyService.getApiBySlug(shortAddr, serviceSlug);
     if (!api) {
       throw new HttpException(
         'API not found in Heekowave registry',

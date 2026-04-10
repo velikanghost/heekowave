@@ -13,6 +13,15 @@ pub struct Service {
 }
 
 #[contracttype]
+#[derive(Clone, Debug, PartialEq)]
+pub struct ServiceInput {
+    pub name: String,
+    pub endpoint: String,
+    pub price: i128,
+    pub tags: Vec<String>,
+}
+
+#[contracttype]
 pub enum DataKey {
     NextId,
     Service(u64),
@@ -34,7 +43,39 @@ impl HeekowaveContract {
         tags: Vec<String>,
     ) -> u64 {
         provider.require_auth();
+        Self::register_service(&env, provider, name, endpoint, price, tags)
+    }
 
+    /// Register multiple API services in a single transaction
+    pub fn batch_register(
+        env: Env,
+        provider: Address,
+        services: Vec<ServiceInput>,
+    ) -> Vec<u64> {
+        provider.require_auth();
+        let mut ids = Vec::new(&env);
+        for service in services.into_iter() {
+            let id = Self::register_service(
+                &env,
+                provider.clone(),
+                service.name,
+                service.endpoint,
+                service.price,
+                service.tags,
+            );
+            ids.push_back(id);
+        }
+        ids
+    }
+
+    fn register_service(
+        env: &Env,
+        provider: Address,
+        name: String,
+        endpoint: String,
+        price: i128,
+        tags: Vec<String>,
+    ) -> u64 {
         let mut next_id: u64 = env.storage().instance().get(&DataKey::NextId).unwrap_or(1);
 
         let service = Service {

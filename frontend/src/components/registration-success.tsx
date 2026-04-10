@@ -43,15 +43,17 @@ export function RegistrationSuccess({
               Transaction Hash
             </span>
           </div>
-          <a
-            href={`https://stellar.expert/explorer/testnet/tx/${txHash}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="block text-xs font-mono text-white hover:text-primary transition-colors truncate"
-          >
-            {txHash}
-            <ExternalLink className="w-3 h-3 text-zinc-700 group-hover:text-primary transition-colors" />
-          </a>
+          <div className="flex items-center gap-1">
+            <a
+              href={`https://stellar.expert/explorer/testnet/tx/${txHash}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block text-xs font-mono text-white hover:text-primary transition-colors truncate"
+            >
+              {txHash}
+            </a>
+            <ExternalLink className="w-5 h-5 text-zinc-700 group-hover:text-primary transition-colors" />
+          </div>
         </div>
 
         <div className="p-4 bg-primary/5 border border-primary/20 flex items-center gap-3">

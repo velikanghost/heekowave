@@ -55,6 +55,35 @@ export async function GET(
     ])
   }
 
+  if (slug === 'genre') {
+    return NextResponse.json([
+      {
+        genre: 'Lo-fi Hip Hop',
+        description: 'Chilled beats to study/relax to.',
+        tracks: [
+          { title: 'Late Night Coffee', artist: 'Heeko Beats' },
+          { title: 'Rainy Day', artist: 'Soro Chill' },
+        ],
+      },
+      {
+        genre: 'Synthwave',
+        description: 'Retro-futuristic electronic music.',
+        tracks: [
+          { title: 'Neon Nights', artist: 'Vector One' },
+          { title: 'Grid Runner', artist: 'Cyber Soul' },
+        ],
+      },
+      {
+        genre: 'Classical',
+        description: 'Timeless orchestral masterpieces.',
+        tracks: [
+          { title: 'Moonlight Sonata', artist: 'Beethoven' },
+          { title: 'Nocturne op.9 No.2', artist: 'Chopin' },
+        ],
+      },
+    ])
+  }
+
   if (slug === 'generate-id') {
     return NextResponse.json({
       id: Math.random().toString(36).substring(2, 11).toUpperCase(),
@@ -69,6 +98,7 @@ export async function GET(
     available_endpoints: [
       '/api/mock/quote',
       '/api/mock/weather',
+      '/api/mock/genre',
       '/api/mock/generate-id',
     ],
   })

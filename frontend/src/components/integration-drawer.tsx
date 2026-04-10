@@ -36,8 +36,11 @@ const RPC_URL =
 
 export function IntegrationDrawer() {
   const { isConnected, publicKey, sign } = useWallet()
-  const { isIntegrationOpen, closeIntegration, selectedSvcForIntegration: svc } =
-    useUIStore()
+  const {
+    isIntegrationOpen,
+    closeIntegration,
+    selectedSvcForIntegration: svc,
+  } = useUIStore()
 
   const [paymentLoading, setPaymentLoading] = useState(false)
   const [paymentTxHash, setPaymentTxHash] = useState<string | null>(null)
@@ -45,16 +48,25 @@ export function IntegrationDrawer() {
   const [testLoading, setTestLoading] = useState(false)
   const [testResponse, setTestResponse] = useState<any | null>(null)
   const [testError, setTestError] = useState<string | null>(null)
+  const [countdown, setCountdown] = useState(0)
 
-  // Reset state when drawer closes or service changes
   useEffect(() => {
     if (!isIntegrationOpen) {
       setPaymentTxHash(null)
       setReceipt(null)
       setTestResponse(null)
       setTestError(null)
+      setCountdown(0)
     }
   }, [isIntegrationOpen])
+
+  // Countdown timer effect
+  useEffect(() => {
+    if (countdown > 0) {
+      const timer = setTimeout(() => setCountdown(countdown - 1), 1000)
+      return () => clearTimeout(timer)
+    }
+  }, [countdown])
 
   const handlePay = async () => {
     if (!isConnected || !publicKey || !svc) return
@@ -94,6 +106,9 @@ export function IntegrationDrawer() {
           timestamp: Math.floor(Date.now() / 1000),
         }
         setReceipt(btoa(JSON.stringify(receiptData)))
+
+        // Start indexing countdown
+        setCountdown(5)
       } else {
         throw new Error('Payment failed')
       }
@@ -112,12 +127,18 @@ export function IntegrationDrawer() {
 
     const gatewayUrl =
       process.env.NEXT_PUBLIC_GATEWAY_URL || 'http://localhost:3002'
+
+    // Use shortAddr/slug format
+    // Use shortAddr/slug format (no ellipsis: SGHYAHS)
+    const shortAddr = `${svc.provider.slice(0, 3)}${svc.provider.slice(-4)}`
+
     try {
-      const res = await fetch(`${gatewayUrl}/proxy/${svc.id}/`, {
+      const res = await fetch(`${gatewayUrl}/proxy/${shortAddr}/${svc.slug}/`, {
         method: 'GET',
         headers: { 'l-http': receipt },
       })
       const data = await res.json()
+      console.log(data)
       setTestResponse(data)
       if (!res.ok) setTestError(data.message || 'Gateway rejected request')
     } catch (err: any) {
@@ -142,7 +163,11 @@ export function IntegrationDrawer() {
   }
 
   return (
-    <Drawer open={isIntegrationOpen} onOpenChange={closeIntegration} direction="right">
+    <Drawer
+      open={isIntegrationOpen}
+      onOpenChange={closeIntegration}
+      direction="right"
+    >
       <DrawerContent className="bg-black border-l border-zinc-800 h-full w-full max-w-xl sm:rounded-none m-0 shadow-2xl outline-none">
         <div className="h-full flex flex-col pt-8">
           <DrawerHeader className="px-8 border-b border-border pb-6">
@@ -155,14 +180,21 @@ export function IntegrationDrawer() {
                   {svc?.name}
                 </DrawerTitle>
                 <DrawerDescription className="font-mono text-[10px] tracking-[0.2em] text-primary font-black mt-3 uppercase">
-                  ID: {svc?.id} | {svc?.price} XLM / CALL
+                  {svc?.slug} | {svc?.price} XLM / CALL
                 </DrawerDescription>
+                <p className="text-[9px] font-mono text-zinc-500 mt-2 break-all opacity-80 italic">
+                  Url:{' '}
+                  {process.env.NEXT_PUBLIC_GATEWAY_URL ||
+                    'http://localhost:3002'}
+                  /proxy/{svc?.provider.slice(0, 3)}
+                  {svc?.provider.slice(-4)}/{svc?.slug}/
+                </p>
               </div>
             </div>
             <div className="flex items-center gap-2">
-               <Badge className="bg-primary/5 text-primary border-primary/20 text-[9px] uppercase font-black px-2 py-0.5 rounded-none">
-                  Developer Test Mode
-               </Badge>
+              <Badge className="bg-primary/5 text-primary border-primary/20 text-[9px] uppercase font-black px-2 py-0.5 rounded-none">
+                Developer Test Mode
+              </Badge>
             </div>
           </DrawerHeader>
 
@@ -179,12 +211,15 @@ export function IntegrationDrawer() {
                 </div>
                 <div className="bg-zinc-900 border border-border p-6 rounded-none space-y-4">
                   <p className="text-zinc-400 text-sm font-medium leading-relaxed text-left">
-                    To authenticate with this API provider, you must initiate a signed Stellar transaction for{' '}
-                    <span className="text-primary font-bold">{svc?.price} XLM</span>. 
-                    This serves as your cryptographically verifiable receipt.
+                    To authenticate with this API provider, you must initiate a
+                    signed Stellar transaction for{' '}
+                    <span className="text-primary font-bold">
+                      {svc?.price} XLM
+                    </span>
+                    . This serves as your cryptographically verifiable receipt.
                   </p>
                   <div className="p-4 bg-black border border-border font-mono text-[10px] text-zinc-500 break-all text-left">
-                    PROVIDER_PUBKEY: {svc?.provider}
+                    PROVIDER: {svc?.provider}
                   </div>
                   <Button
                     className="w-full bg-primary text-black font-black uppercase tracking-widest text-xs h-12 rounded-none hover:bg-white transition-colors"
@@ -193,19 +228,21 @@ export function IntegrationDrawer() {
                   >
                     {paymentLoading ? (
                       <>
-                        <Loader2 className="mr-3 h-4 w-4 animate-spin" /> PROCESSING_TRANS
+                        <Loader2 className="mr-3 h-4 w-4 animate-spin" />{' '}
+                        PROCESSING...
                       </>
                     ) : !isConnected ? (
                       'WAITING_FOR_WALLET'
                     ) : (
                       <>
-                        AUTHORIZE PAYMENT <Zap className="ml-2 w-4 h-4 fill-current" />
+                        AUTHORIZE PAYMENT{' '}
+                        <Zap className="ml-2 w-4 h-4 fill-current" />
                       </>
                     )}
                   </Button>
                   {testError && (
                     <div className="p-3 border border-red-500/30 bg-red-500/5 text-red-500 text-[10px] font-mono text-center">
-                      ERROR: {testError}
+                      ERROR
                     </div>
                   )}
                 </div>
@@ -216,7 +253,7 @@ export function IntegrationDrawer() {
                   <div className="flex items-center gap-3">
                     <CheckCircle2 className="w-6 h-6 text-green-500" />
                     <h3 className="text-xs uppercase tracking-widest font-black text-white">
-                      Receipt_Validated
+                      Receipt Validated
                     </h3>
                   </div>
                   <div className="bg-green-500/5 border border-green-500/20 p-5 flex items-center justify-between group">
@@ -231,7 +268,7 @@ export function IntegrationDrawer() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="text-green-500 hover:bg-green-500 hover:text-black rounded-none h-8 px-4 font-black uppercase text-[10px] tracking-widest"
+                      className="text-green-500 hover:bg-green-500 hover:text-white rounded-none h-8 px-4 font-black uppercase text-[10px] tracking-widest"
                       onClick={() =>
                         window.open(
                           `https://stellar.expert/explorer/testnet/tx/${paymentTxHash}`,
@@ -239,7 +276,7 @@ export function IntegrationDrawer() {
                         )
                       }
                     >
-                      Verify
+                      View
                     </Button>
                   </div>
                 </div>
@@ -269,12 +306,15 @@ export function IntegrationDrawer() {
                         <div className="flex gap-2">
                           <span className="text-primary">$</span>
                           <span className="text-zinc-300 italic">
-                            GET /proxy/{svc?.id}/
+                            GET /proxy/{svc?.provider.slice(0, 3)}...
+                            {svc?.provider.slice(-4)}/{svc?.slug}/
                           </span>
                         </div>
                         <div className="flex items-center gap-2 mt-2 text-zinc-500">
                           <span>[HEADER]</span>
-                          <span className="text-primary font-bold">l-http:</span>
+                          <span className="text-primary font-bold">
+                            l-http:
+                          </span>
                           <span className="text-zinc-600">
                             {receipt?.slice(0, 24)}...
                           </span>
@@ -283,23 +323,31 @@ export function IntegrationDrawer() {
                     </div>
 
                     <Button
-                      className="w-full bg-white text-black font-black uppercase tracking-widest text-xs h-12 rounded-none hover:bg-primary transition-colors"
+                      className="w-full bg-white text-black font-black uppercase tracking-widest text-xs h-12 rounded-none hover:bg-primary transition-colors disabled:opacity-50"
                       onClick={handleTestCall}
-                      disabled={testLoading}
+                      disabled={testLoading || countdown > 0}
                     >
                       {testLoading ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : countdown > 0 ? (
+                        `INDEXING... ${countdown}s`
                       ) : (
-                        'EXECUTE_API_CALL'
+                        'EXECUTE API CALL'
                       )}
                     </Button>
 
                     {testResponse && (
                       <div className="space-y-3 animate-in fade-in zoom-in-95 duration-300 mt-6 text-left">
                         <h4 className="text-[10px] font-mono text-zinc-500 font-black uppercase px-2 tracking-widest">
-                          Server_Response_Output
+                          Server Response Output
                         </h4>
-                        <pre className="p-5 bg-zinc-950 border border-zinc-800 font-mono text-[11px] text-green-400 overflow-x-auto shadow-inner">
+                        <pre
+                          className={`p-5 font-mono text-[11px] overflow-x-auto shadow-inner border ${
+                            testError
+                              ? 'bg-red-500/5 border-red-500/20 text-red-400'
+                              : 'bg-zinc-950 border-border text-zinc-400'
+                          }`}
+                        >
                           {JSON.stringify(testResponse, null, 2)}
                         </pre>
                       </div>
@@ -310,9 +358,13 @@ export function IntegrationDrawer() {
                         <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
                         <div className="space-y-1">
                           <p className="font-black uppercase tracking-tighter">
-                            Execution_Error
+                            Execution Error
                           </p>
-                          <p className="opacity-80">{testError}</p>
+                          <p className="opacity-80">
+                            {typeof testError === 'string'
+                              ? testError
+                              : (testError as any).message || 'Request failed'}
+                          </p>
                         </div>
                       </div>
                     )}

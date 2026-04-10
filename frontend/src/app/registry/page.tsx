@@ -26,6 +26,9 @@ import { useUIStore } from '@/store/ui-store'
 const RPC_URL =
   process.env.NEXT_PUBLIC_RPC_URL || 'https://soroban-testnet.stellar.org'
 
+const GATEWAY_URL =
+  process.env.NEXT_PUBLIC_GATEWAY_URL || 'http://localhost:3002'
+
 export default function Registry() {
   const { isConnected, publicKey, sign } = useWallet()
   const { openRegistration, openIntegration } = useUIStore()
@@ -36,10 +39,17 @@ export default function Registry() {
     error,
   } = useServicesStore()
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list')
+  const [copiedId, setCopiedId] = useState<string | null>(null)
 
   useEffect(() => {
     fetchServices()
   }, [fetchServices])
+
+  const handleCopy = (text: string, id: string) => {
+    navigator.clipboard.writeText(text)
+    setCopiedId(id)
+    setTimeout(() => setCopiedId(null), 2000)
+  }
 
   const getIcon = (tags: string[]) => {
     const t = tags.map((tag) => tag.toLowerCase())
@@ -55,7 +65,12 @@ export default function Registry() {
   }
 
   const formatAddress = (addr: string) =>
-    addr ? `${addr.slice(0, 6)}...${addr.slice(-4)}` : 'Unknown'
+    addr ? `${addr.slice(0, 3)}${addr.slice(-4)}` : 'Unknown'
+
+  const getGatewayUrl = (svc: any) => {
+    const short = formatAddress(svc.provider)
+    return `${GATEWAY_URL}/proxy/${short}/${svc.slug}/`
+  }
 
   return (
     <div className="flex flex-col space-y-8 animate-in fade-in duration-500 pb-12">
@@ -97,7 +112,7 @@ export default function Registry() {
           <div className="py-20 text-center border-2 border-primary/20 bg-primary/5 rounded-none">
             <AlertCircle className="w-10 h-10 text-primary mx-auto mb-4" />
             <p className="text-primary font-black uppercase tracking-widest text-xs">
-              REGISTRY_FAILURE: {error}
+              REGISTRY_FAILURE
             </p>
             <Button
               variant="link"
@@ -155,15 +170,24 @@ export default function Registry() {
                               <p className="font-bold text-white text-sm uppercase tracking-tight">
                                 {svc.name}
                               </p>
-                              <div className="flex gap-1 mt-1">
+                              <div className="flex gap-2 mt-1.5 items-center">
                                 {svc.tags.slice(0, 2).map((t: string) => (
                                   <span
                                     key={t}
-                                    className="text-[9px] px-1 bg-zinc-800 text-zinc-500 rounded-none"
+                                    className="text-[9px] px-1 bg-zinc-800 text-zinc-500 rounded-none border border-zinc-800"
                                   >
                                     {t}
                                   </span>
                                 ))}
+                                <span 
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleCopy(getGatewayUrl(svc), svc.id);
+                                  }}
+                                  className={`text-[9px] font-mono transition-colors truncate max-w-[200px] cursor-pointer hover:text-primary ${copiedId === svc.id ? 'text-primary font-bold' : 'text-zinc-600 italic'}`}
+                                >
+                                  {copiedId === svc.id ? 'COPIED!' : getGatewayUrl(svc)}
+                                </span>
                               </div>
                             </div>
                           </div>
@@ -224,7 +248,7 @@ export default function Registry() {
                       </div>
                     </CardHeader>
                     <CardContent>
-                      <div className="flex flex-wrap gap-2 mb-6">
+                      <div className="flex flex-wrap gap-2 mb-4">
                         {svc.tags.map((tag: string) => (
                           <span
                             key={tag}
@@ -233,6 +257,18 @@ export default function Registry() {
                             {tag}
                           </span>
                         ))}
+                      </div>
+
+                      <div 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleCopy(getGatewayUrl(svc), `grid-${svc.id}`);
+                        }}
+                        className="mb-6 p-2 bg-black border border-border/50 cursor-pointer group-hover:border-primary/30 transition-all text-left"
+                      >
+                        <p className={`text-[9px] font-mono break-all leading-tight transition-colors ${copiedId === `grid-${svc.id}` ? 'text-primary font-bold' : 'text-primary/70'}`}>
+                          {copiedId === `grid-${svc.id}` ? 'COPIED TO CLIPBOARD' : getGatewayUrl(svc)}
+                        </p>
                       </div>
                       <Button
                         className="w-full bg-zinc-900 border border-border hover:bg-primary hover:text-black font-black uppercase text-[10px] tracking-[0.2em] h-10 rounded-none transition-all"

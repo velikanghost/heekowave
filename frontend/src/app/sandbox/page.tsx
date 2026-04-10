@@ -61,7 +61,7 @@ export default function AgentSandbox() {
   const [logs, setLogs] = useState<
     {
       id: string
-      type: 'info' | 'success' | 'error' | 'agent'
+      type: 'info' | 'success' | 'warning' | 'error' | 'agent'
       text: string
       time: string
     }[]
@@ -70,7 +70,7 @@ export default function AgentSandbox() {
 
   const addLog = (
     text: string,
-    type: 'info' | 'success' | 'error' | 'agent' = 'info',
+    type: 'info' | 'success' | 'warning' | 'error' | 'agent' = 'info',
   ) => {
     setLogs((prev) => [
       ...prev,
@@ -129,7 +129,10 @@ export default function AgentSandbox() {
 
     const gatewayUrl =
       process.env.NEXT_PUBLIC_GATEWAY_URL || 'http://localhost:3002'
-    const targetUrl = `${gatewayUrl}/proxy/${selectedService.id}/`
+    
+    // New Structure: proxy/:shortAddr/:serviceSlug (no ellipsis: SGHYAHS)
+    const shortAddr = `${selectedService.provider.slice(0, 3)}${selectedService.provider.slice(-4)}`
+    const targetUrl = `${gatewayUrl}/proxy/${shortAddr}/${selectedService.slug}/`
 
     setIsRunning(true)
     setLogs([]) // Clear old logs
@@ -149,7 +152,7 @@ export default function AgentSandbox() {
       if (response.status === 402) {
         addLog(
           '402 Payment Required intercepted. Parsing x402 requirements...',
-          'error',
+          'warning',
         )
         const { requirements } = await response.json()
         addLog(
@@ -202,7 +205,7 @@ export default function AgentSandbox() {
           addLog('Generating L-HTTP Cryptographic Receipt...', 'info')
           const receiptData = btoa(
             JSON.stringify({
-              x402Version: 1,
+              x402Version: '1.0.0',
               payload: {
                 hash: result.hash,
                 signer: keypair.publicKey(),
@@ -222,10 +225,10 @@ export default function AgentSandbox() {
 
           // 4. Final Attempt with Receipt
           addLog(
-            'Waiting 4 seconds for Network to index transaction...',
+            'Waiting 5 seconds for Network to index transaction...',
             'info',
           )
-          await new Promise((r) => setTimeout(r, 4000))
+          await new Promise((r) => setTimeout(r, 5000))
 
           addLog(
             'Retrying Gateway request with L-HTTP Receipt attached...',
@@ -468,6 +471,11 @@ export default function AgentSandbox() {
                       AGENT_SYS:
                     </span>
                     <span className="text-white">{log.text}</span>
+                  </div>
+                ) : log.type === 'warning' ? (
+                  <div className="text-yellow-400 break-all whitespace-pre-wrap">
+                    <Zap className="w-3 h-3 inline mr-2 -mt-0.5" />
+                    {log.text}
                   </div>
                 ) : log.type === 'error' ? (
                   <div className="text-red-400 break-all whitespace-pre-wrap">

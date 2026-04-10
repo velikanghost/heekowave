@@ -17,10 +17,15 @@ export class ProxyController {
     return this.proxyService.getStats();
   }
 
-  @All(':apiId/*')
+  @All(':shortAddr/:serviceSlug/*')
   @UseGuards(X402Guard)
-  async handleProxy(@Param('apiId') apiId: string, @Req() req: Request, @Res() res: Response) {
-    const api = await this.proxyService.getApi(apiId);
+  async handleProxy(
+    @Param('shortAddr') shortAddr: string,
+    @Param('serviceSlug') serviceSlug: string,
+    @Req() req: Request,
+    @Res() res: Response
+  ) {
+    const api = await this.proxyService.getApiBySlug(shortAddr, serviceSlug);
     if (!api) throw new NotFoundException('API not found');
 
     const subPath = (req.params as any)[0] || '';

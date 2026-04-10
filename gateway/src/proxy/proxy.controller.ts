@@ -12,6 +12,11 @@ export class ProxyController {
     return this.proxyService.getAllApis();
   }
 
+  @Get('stats')
+  async getStats() {
+    return this.proxyService.getStats();
+  }
+
   @All(':apiId/*')
   @UseGuards(X402Guard)
   async handleProxy(@Param('apiId') apiId: string, @Req() req: Request, @Res() res: Response) {

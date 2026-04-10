@@ -5,19 +5,16 @@ import { usePathname } from 'next/navigation'
 import {
   List,
   LayoutDashboard,
-  Database,
-  FileText,
   Activity,
   Zap,
-  ChevronRight,
+  TerminalSquare,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const navigation = [
-  { name: 'Directory', href: '/', icon: List },
+  { name: 'Marketplace', href: '/registry', icon: List },
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-  { name: 'Registry', href: '/registry', icon: Database },
-  { name: 'Docs', href: '/docs', icon: FileText },
+  { name: 'Sandbox', href: '/sandbox', icon: TerminalSquare },
 ]
 
 export function Sidebar() {
@@ -27,9 +24,6 @@ export function Sidebar() {
     <div className="hidden lg:flex w-64 flex-col fixed inset-y-0 z-50 bg-black border-r border-border">
       <div className="flex h-16 shrink-0 items-center px-6 border-b border-border">
         <Link href="/" className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-primary flex items-center justify-center rounded-sm">
-            <Zap className="w-5 h-5 text-white" />
-          </div>
           <span className="font-bold text-xl tracking-tight text-white uppercase italic">
             Heekowave
           </span>

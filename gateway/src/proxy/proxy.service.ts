@@ -67,4 +67,32 @@ export class ProxyService implements OnModuleInit {
       });
     }
   }
+
+  async getStats() {
+    try {
+      const registryCount = await this.prisma.service.count();
+      const receipts = await this.prisma.paymentReceipt.findMany();
+      
+      let totalVolume = 0;
+      const activeServiceIds = new Set<string>();
+      
+      receipts.forEach(r => {
+        totalVolume += parseFloat(r.amount);
+        activeServiceIds.add(r.serviceId);
+      });
+      
+      return {
+        registryCount,
+        totalVolume: totalVolume.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+        activeAgents: activeServiceIds.size
+      };
+    } catch (error) {
+      console.error('Error fetching stats from DB (likely uninitialized):', error.message);
+      return {
+        registryCount: 0,
+        totalVolume: '0.00',
+        activeAgents: 0
+      };
+    }
+  }
 }

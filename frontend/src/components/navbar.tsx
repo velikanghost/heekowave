@@ -1,11 +1,23 @@
 'use client'
 
+import { useEffect } from 'react'
+import { useUIStore } from '@/store/ui-store'
+import { useStatsStore } from '@/store/stats-store'
+import { Button } from './ui/button'
 import { useWallet } from '@/lib/wallet-context'
-import { LogOut, Wallet, Loader2, Search, Terminal } from 'lucide-react'
+import { LogOut, Loader2, Wallet } from 'lucide-react'
 
 export function Navbar() {
   const { publicKey, connect, disconnect, isConnecting, isConnected } =
     useWallet()
+  const { openRegistration } = useUIStore()
+  const { stats, fetchStats } = useStatsStore()
+
+  useEffect(() => {
+    fetchStats()
+    const interval = setInterval(fetchStats, 10000)
+    return () => clearInterval(interval)
+  }, [fetchStats])
 
   const truncateKey = (key: string) => {
     return `${key.slice(0, 4)}...${key.slice(-4)}`
@@ -17,33 +29,36 @@ export function Navbar() {
         {/* Global Stats */}
         <div className="hidden md:flex items-center gap-6 font-mono text-[11px] text-muted-foreground">
           <div className="flex items-center gap-2">
-            <span className="uppercase tracking-widest text-zinc-500 font-bold">Registry:</span>
-            <span className="text-primary font-bold">42</span>
+            <span className="uppercase tracking-widest text-zinc-500 font-bold">
+              Registry:
+            </span>
+            <span className="text-primary font-bold">
+              {stats.registryCount}
+            </span>
           </div>
           <div className="h-3 w-px bg-border" />
           <div className="flex items-center gap-2">
-            <span className="uppercase tracking-widest text-zinc-500 font-bold">Total Volume:</span>
-            <span className="text-white">58,241 XLM</span>
+            <span className="uppercase tracking-widest text-zinc-500 font-bold">
+              Total Volume:
+            </span>
+            <span className="text-white">{stats.totalVolume} XLM</span>
           </div>
           <div className="h-3 w-px bg-border" />
           <div className="flex items-center gap-2">
-            <span className="uppercase tracking-widest text-zinc-500 font-bold">Active Agents:</span>
-            <span className="text-white">1,024</span>
+            <span className="uppercase tracking-widest text-zinc-500 font-bold">
+              Active Agents:
+            </span>
+            <span className="text-white">{stats.activeAgents}</span>
           </div>
         </div>
 
         <div className="ml-auto flex items-center gap-4">
-          <div className="relative hidden sm:block">
-            <Search className="absolute left-3 top-2.5 h-4 w-4 text-zinc-500" />
-            <input
-              type="text"
-              placeholder="Search agents / services..."
-              className="h-10 w-72 bg-zinc-900 border border-border px-10 text-xs focus:outline-none focus:border-primary rounded-none transition-all placeholder:text-zinc-600"
-            />
-            <div className="absolute right-3 top-2.5 px-1.5 py-0.5 border border-border rounded-sm text-[10px] text-zinc-500 font-mono">
-              /
-            </div>
-          </div>
+          <Button
+            onClick={openRegistration}
+            className="bg-primary text-black hover:bg-primary/90 font-black uppercase tracking-widest text-[10px] h-11 px-8 rounded-none"
+          >
+            Deploy a Service
+          </Button>
 
           <div className="h-10 w-px bg-border mx-2 hidden sm:block" />
 
@@ -86,4 +101,3 @@ export function Navbar() {
     </header>
   )
 }
-

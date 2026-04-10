@@ -168,11 +168,6 @@ export class X402Guard implements CanActivate {
 
       return true;
     } catch (e) {
-      const fs = await import('fs');
-      fs.appendFileSync(
-        'verification_error.log',
-        `[${new Date().toISOString()}] ${e.stack || e.message}\n`,
-      );
       console.error('X402 Verification Error:', e);
       if (e instanceof HttpException) throw e;
       throw new HttpException(

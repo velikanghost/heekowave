@@ -12,7 +12,24 @@ import { RegistrationDrawer } from '@/components/registration-drawer'
 export const metadata: Metadata = {
   title: 'Heekowave',
   description:
-    'A decentralized registry for AI agent services utilizing the Stellar x402 payment protocol.',
+    'The discovery and monetization layer for the autonomous economy. Powered by Stellar x402 micro-payments and Soroban smart contracts.',
+  openGraph: {
+    title: 'Heekowave',
+    description:
+      'Autonomous Settlement Gateway & API Registry for the Agentic Economy.',
+    images: [{ url: '/thumbnail.png', width: 1200, height: 630 }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Heekowave',
+    description:
+      'Autonomous Settlement Gateway & API Registry for the Agentic Economy.',
+    images: ['/thumbnail.png'],
+  },
+  icons: {
+    icon: '/favicon-32x32.png',
+    apple: '/apple-touch-icon.png',
+  },
 }
 
 export default function RootLayout({
